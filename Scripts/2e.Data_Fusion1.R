@@ -36,7 +36,7 @@
 
 
 
-# ------- 1. Apply exclusions on the credit dataset to increase available memory
+# ------- 1. Isolate (new) single-record cases in preparation for Markov-type modelling
 
 ptm <- proc.time() # for runtime calculations (ignore)
 
@@ -44,6 +44,39 @@ ptm <- proc.time() # for runtime calculations (ignore)
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final3"), tempPath)
 if (!exists('datMV')) unpack.ffdf(paste0(genPath,"datMV"), tempPath)
 if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd"), tempPath)
+
+# [DIAGNOSTIC] Account-level and dataset-wide impacts of exclusion
+diag.real12a <-  datCredit_real[ExclusionID == 0 & Counter == 1 & Max_Counter == 1, .N] / 
+  datCredit_real[ExclusionID == 0 & Counter == 1, .N] * 100 
+diag.real12a_abs <- datCredit_real[ExclusionID == 0 & Max_Counter == 1, .N]
+diag.real12a_rec <-  diag.real12a_abs / datCredit_real[ExclusionID == 0, .N] * 100
+
+# - Conditional exclusion
+if (diag.real12a > 0) {
+  
+  cat("EXCLUSION: New single-record cases. Prevalence: ", round(diag.real12a,digits=1), "% of accounts (",
+      round(diag.real12a_rec,digits=1), "% of records).\n")
+  
+  # - Mark affected records for exclusion later with an ID-value
+  LoanIDs <- unique(subset(datCredit_real, ExclusionID == 0 & Counter == 1 & Max_Counter == 1, select="LoanID"))
+  datCredit_real[LoanID %in% LoanIDs$LoanID, ExclusionID := 8]
+  
+  # [SANITY CHECK] Treatment success?
+  check_excl1 <- datCredit_real[ExclusionID == 8 & Counter == 1, .N] / 
+    datCredit_real[ExclusionID %in% c(0,8) & Counter == 1, .N] * 100 == diag.real12a
+  cat( check_excl1 %?% 'SAFE: Exclusion 8 successfully applied.\n' %:% 
+         'WARNING: Applying Exclusion 8 failed.\n')
+  
+  # - Create and add exclusion impact to a common table
+  datExcl <- data.table("Excl_ID"=8, "Reason"="New single-record cases",
+                        "Impact_Account" = diag.real12a, "Impact_Dataset" = diag.real12a_rec,
+                        "Impact_records" = diag.real12a_abs)
+  if (exists('datExclusions')) datExclusions <- rbind(datExclusions, datExcl) else datExclusions <- datExcl
+}
+
+
+
+# ------- 2. Apply exclusions on the credit dataset to increase available memory
 
 # - Population-level prevalence rate and record tally before any Exclusions
 # NOTE: choose default prior probability as measure for evaluating impact
@@ -99,7 +132,7 @@ datCredit_real <- subset(datCredit_real, select = -c(ExclusionID))
 
 
 
-# ------- 2. Fuse the macroeconomic data with the credit data
+# ------- 3. Fuse the macroeconomic data with the credit data
 
 # - Find intersection between fields in the credit dataset and the macroeconomic dataset
 (overlap_flds <- intersect(colnames(datCredit_real), colnames(datMV))) # no overlapping fields except Date
@@ -146,7 +179,7 @@ rm(datMV); gc()
 
 
 
-# ------- 3. Feature Engineering that needs entire loan- and spell histories
+# ------- 4. Feature Engineering that needs entire loan- and spell histories
 
 # --- Create preliminary target/outcome variables for stated modelling objective
 # NOTE: This particular field is instrumental to designing the subsampling & resampling scheme,
@@ -304,11 +337,11 @@ describe(datCredit_real$NewLoans_Aggr_Prop); plot(unique(datCredit_real$NewLoans
 
 
 
-# ------ 4. General Markov Data prep
+# ------ 5. General Markov Data prep
 # --- Order the dataset in ascending LoanID then ascending Date within
-datCredit_real<-datCredit_real[order(datCredit_real$LoanID, datCredit_real$Date),]
+# datCredit_real<-datCredit_real[order(datCredit_real$LoanID, datCredit_real$Date),]
 
-# --- Calculate Status ,i.e., State the loan is in within the state space
+# - Calculate account Status ,i.e., State the loan is in within the state space
 # - Performing = "Perf"
 # - Default = "Def"
 # - Settlement = "Set"
@@ -317,18 +350,21 @@ datCredit_real[,Status := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
                                     WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
 
 # --- First and Last Indicator variables for each observation
-datCredit_real[,Nr_Obs:=.N,by=list(LoanID)]
+#datCredit_real[,Nr_Obs:=.N,by=list(LoanID)]
 
 # --- Remove accounts that has only one observation; these accounts has no transitions
-cat("Number of observations before single obs exclusions",datCredit_real[,.N],"\n")
-datCredit_real<-datCredit_real[Nr_Obs>1,]
-cat("Number of observations after single obs exclusions",datCredit_real[,.N],"\n")
+#cat("Number of observations before single obs exclusions",datCredit_real[,.N],"\n")
+#datCredit_real<-datCredit_real[Nr_Obs>1,]
+#cat("Number of observations after single obs exclusions",datCredit_real[,.N],"\n")
 ### RESULTS: 47 942 462 observations before exclusions; 47 939 860 after exclusions
 
-# --- Calculate the State the borrower moves to
-datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill="-99"),by=LoanID]
+# - Calculate the State the borrower moves to
+datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill=NA),by=LoanID]
 
-# ------ 5. General cleanup & checks
+
+
+
+# ------ 6. General cleanup & checks
 
 # - remove intermediary fields, as a memory enhancement
 datCredit_real[, g0_Delinq_Shift := NULL]
