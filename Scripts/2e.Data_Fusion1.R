@@ -304,7 +304,31 @@ describe(datCredit_real$NewLoans_Aggr_Prop); plot(unique(datCredit_real$NewLoans
 
 
 
-# ------ 4. General cleanup & checks
+# ------ 4. General Markov Data prep
+# --- Order the dataset in ascending LoanID then ascending Date within
+datCredit_real<-datCredit_real[order(datCredit_real$LoanID, datCredit_real$Date),]
+
+# --- Calculate Status ,i.e., State the loan is in within the state space
+# - Performing = "Perf"
+# - Default = "Def"
+# - Settlement = "Set"
+# - Write-Off = "W_Off"
+datCredit_real[,Status := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
+                                    WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
+
+# --- First and Last Indicator variables for each observation
+datCredit_real[,Nr_Obs:=.N,by=list(LoanID)]
+
+# --- Remove accounts that has only one observation; these accounts has no transitions
+cat("Number of observations before single obs exclusions",datCredit_real[,.N],"\n")
+datCredit_real<-datCredit_real[Nr_Obs>1,]
+cat("Number of observations after single obs exclusions",datCredit_real[,.N],"\n")
+### RESULTS: 47 942 462 observations before exclusions; 47 939 860 after exclusions
+
+# --- Calculate the State the borrower moves to
+datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill="-99"),by=LoanID]
+
+# ------ 5. General cleanup & checks
 
 # - remove intermediary fields, as a memory enhancement
 datCredit_real[, g0_Delinq_Shift := NULL]

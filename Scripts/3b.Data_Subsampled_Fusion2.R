@@ -37,172 +37,54 @@
 
 ptm <- proc.time() # for runtime calculations (ignore)
 
+# - Graphing
+chosenFont<-"Cambria"
+dpi<-180
+
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
 if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd-Enriched"), tempPath)
 
 # ------ 1. General Markov Data prep
-# --- Order the dataset in ascending LoanID then ascending Date within
-datCredit_real<-datCredit_real[order(datCredit_real$LoanID, datCredit_real$Date),]
+# --- Creating Indicator variables that do not overlap
+datCredit_real[,Mark_Perf_Ind:=ifelse(To=="Perf",1,0)]
+datCredit_real[,Mark_Def_Ind:=ifelse(To=="Def",1,0)]
+datCredit_real[,Mark_Set_Ind:=ifelse(To=="Set",1,0)]
+datCredit_real[,Mark_WO_Ind:=ifelse(To=="W_Off",1,0)]
 
-# --- Calculate Status ,i.e., State the loan is in within the state space
-# - Performing = 1
-# - Default = 2
-# - Settlement = 3
-# - Write-Off = 4
-datCredit_real <- datCredit_real %>% mutate(Status = case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
-                                                               WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf"))
-
-# --- First and Last Indicator variables for each observation
-# - Creating variables and adding them to the data, purely to help with data preperation tasks
-is.first<-rep(0,nrow(datCredit_real))
-is.last<-rep(0,nrow(datCredit_real))
-datCredit_real<-cbind(datCredit_real,is.first,is.last)
-
-# - Actual calculation of first and last observation of each loan account
-datCredit_real[!duplicated(datCredit_real[,"LoanID"]),"is.first"]<-1
-datCredit_real[,is.last:= .I == last(.I), by=LoanID]
-
-# --- Remove accounts that has only one observation; these accounts has no transitions
-datCredit_real<-datCredit_real[-which(datCredit_real$is.last==1 & datCredit_real$is.first==1),]
-
-# --- Calculate the State the borrower moves to
-datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill=-99),by=LoanID]
-
+# - Set Reference Category for multinomial model (Performing for "From Performing" transitions and Default for "From Default" transitions)
+datCredit_real[,Target_FromP:=relevel(factor(To),ref="Perf")]
+datCredit_real[,Target_FromD:=relevel(factor(To),ref="Def")]
 
 
 # ------ 2. Subsampling scheme with 2-way stratified random sampling
-
-# --- Number of unique borrowers
-n_obs<-datCredit_real[,.N]
-n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
-cat("Nr of Loan Accounts in Dataset = ",n_loan_acc,"\n",sep="")
-### RESULTS: Nr of Loan Accounts in Dataset = 653 317 which makes up the 47 942 462 observations
+# --- Set seed for sampling
+set.seed(1,kind="Mersenne-Twister")
 
 # ------ 1. Subsampling
 # --- Choose subset size (nr of borrowers)
-nr<-125000
+n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
+nr<-135000
 prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
+cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
+### RESULTS: Implied sampling fraction = 20.746%
 
 # --- Obtain first observations of all LoanIDs
 dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
-# - Use simple random sampling on the LoanIDs by Origination Date
+# - Use stratified sampling by the origination date using the LoanID's
 dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=prop_sub)
 
 # - Create the subset dataset
-dat_sub1 <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
-cat("Nr of observations in Subset = ",nrow(dat_sub1),"\n",sep="")
-### RESULTS: Nr of observations in Subset = 8 795 740
-
-# --- Creating the aggregated datasets containing the incidence rates
-# --- Overall comparison
-# - Coalescing the aggregated dataset
-dat_graph <- rbind(datCredit_real[, Dataset := "a_Full"],
-                   dat_sub1[,Dataset:="b_Sub"])
-
-# - Obtaining dates for calculations
-Def_StartDte <- min(dat_graph[Dataset == 'a_Full',Date], na.rm=T) # Date of earliest record (for filtering)
-Def_EndDte <- max(dat_graph[Dataset == 'a_Full',Date], na.rm=T) # Date of last record (for filtering)
-maxDate<-max(datCredit_real$Date)-years(1)# Date that will ensure that the 12-month default rates are undefined for the last observed 12 months
-
-# - Creating the main aggregated dataset
-port.aggr <- dat_graph[DefaultStatus1==0,list(DefaultRate_12_lead_max = sum(DefaultStatus1_lead_12_max, na.rm=T)/.N), # 12-month worst ever default rate
-                       by=list(Dataset, Date)][Date >= Def_StartDte & Date <= Def_EndDte,] %>% setkey(Dataset, Date)
-
-port.aggr_long <- port.aggr %>% pivot_longer(cols="DefaultRate_12_lead_max") %>% data.table()
-
-# - Creating an annotation dataset for easier annotations
-dat_anno1 <- data.table(Resampling_Scheme = "SRS",
-                        Perf_Def = "All", 
-                        MAE = NULL,
-                        name = "DefaultRate_12_lead_max",
-                        Dataset = "A-B",
-                        Label = rep(paste0("'MAE between full and subset: "), 1),
-                        x = rep(as.Date("2014-01-31"),1),
-                        y = 0.065)
-
-# - Default rate over time (worst-ever approach)
-dat_anno1[1, MAE := mean(abs(port.aggr[Dataset=="a_Full", DefaultRate_12_lead_max] - port.aggr[Dataset=="b_Sub", DefaultRate_12_lead_max]), na.rm = T)]
-
-# - Last adjustments before plotting
-dat_anno1[, Label := paste0(Label, " = ", sprintf("%.4f",MAE*100), "%'")]
-col.v <- brewer.pal(9, "Set1")[c(1,4,2)]
-label.v <- c("a_Full"="Full",
-             "b_Sub"="Subset")
-shape.v <- c(17,4); linetype.v <- c("solid","solid")
-
-# - Facet names
-facet_names_full <- c("DefaultRate_12_lead_max"="12-Month Default Rate (WE)")
-
-# - Main graph
-(gg_Subsample_WE<- ggplot(port.aggr_long[Dataset %in% c("a_Full", "b_Sub") & name == "DefaultRate_12_lead_max" & Date <= maxDate,], aes(x=Date, y=value)) + 
-    theme_minimal() +
-    labs(x="Reporting date (ccyymm)", y=bquote("12-Month  Conditional Default Rate "~italic(r(t,bar(D)))), family=chosenFont) + 
-    theme(text=element_text(family=chosenFont),legend.position = "bottom",
-          axis.text.x=element_text(angle=90)) + 
-    # main line graph with overlaid points
-    geom_line(aes(colour=Dataset, linetype=Dataset),linewidth=1) + 
-    geom_point(aes(colour=Dataset, shape=Dataset),size=1.5) + 
-    # facets & scale options
-    facet_wrap(.~ name, scales = "free", labeller=labeller(name = facet_names_full)) +
-    geom_text(data=dat_anno1[name == "DefaultRate_12_lead_max"], aes(x=x, y=y, label = Label), family=chosenFont, size=4, parse=T) +
-    scale_colour_manual(name=bquote("Sample "*italic(bar(D))), values=col.v, labels=label.v) + 
-    scale_shape_manual(name=bquote("Sample "*italic(bar(D))), values=shape.v, labels=label.v) + 
-    scale_linetype_manual(name=bquote("Sample "*italic(bar(D))), values=linetype.v, labels=label.v) + 
-    scale_x_date(date_breaks=paste0(6, " month"), date_labels = "%b %Y") +
-    scale_y_continuous(breaks=pretty_breaks(), label=percent))
-### RESULTS: MAE between full and subsampled incidence rate is 0.1052%
-
-# - Clean up
-rm("dat_anno1","dat_graph","dat_sub_keys1","dat_temp","port.aggr","port.aggr_long")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###############################
-# - Preliminaries
-smp_perc <- smp_size / (datCredit_real[complete.cases(mget(stratifiers)), mget(stratifiers)][,.N]) # Implied sampling fraction for downsampling step
-
-# - Downsample data into a set with a fixed size (using stratified sampling) before implementing resampling scheme
-set.seed(1, kind="Mersenne-Twister")
-datCredit_smp <- datCredit_real %>% drop_na(all_of(stratifiers)) %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=smp_perc) %>% as.data.table()
-cat( (datCredit_smp[is.na(get(targetVar)), .N] == 0) %?% 'SAFE: No missingness in target variable.\n' %:% 
-       'WARNING: Missingness detected in target variable.\n')
-rm(datCredit_real); gc()
+datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
+cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
+### RESULTS: Nr of observations in Subset = 9 571 146
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_final4b"), datCredit_smp)
 
 
-
-
-
 # ------ 3. Fuse the input space with the subsampled prepared dataset
-
 # --- Load in main dataset (subsampled)
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4b"), tempPath)
 
@@ -295,8 +177,7 @@ varList_Num <- c('slc_past_due_amt','slc_acct_pre_lim_perc','slc_acct_prepaid_pe
                  'Balance','TimeInPerfSpell','PerfSpell_Age', 'PerfSpell_Counter',
                  'TimeInDefSpell', 'DefSpell_Age', 'DefSpell_Counter',
                  'Event_Time', 'g0_Delinq_Num', 'g0_Delinq_SD', 'NewLoans_Aggr_Prop')
-var_Info_Num <- describe(subset(datCredit_smp, select = varList_Num))
-
+var_Info_Num <- suppressWarnings(describe(subset(datCredit_smp, select = varList_Num)))
 
 
 # --- 3. Missing value treatment (categorical variables)
@@ -365,6 +246,14 @@ cat( ( datCredit_smp[is.na(slc_acct_roll_ever_24_imputed_mean), .N ] == 0) %?%
 (var_Info_Num$slc_acct_roll_ever_24_imputed_mean <- describe(datCredit_smp$slc_acct_roll_ever_24_imputed_mean)); hist(datCredit_smp$slc_acct_roll_ever_24_imputed_mean, breaks='FD')
 ### RESULTS: Imputation successful, categorical variable now has 6 distinct classes, with majority having 0-value, while
 # the imputed cases (value of 0.48) being the second most prevalent.
+
+# - Categorical version of slc_acct_roll_ever
+datCredit_smp[,slc_acct_roll_ever_24_cat:=factor(ifelse(is.na(slc_acct_roll_ever_24) | slc_acct_roll_ever_24 == "","Missing",slc_acct_roll_ever_24))]
+cat((datCredit_smp[is.na(slc_acct_roll_ever_24_cat), .N ] == 0) %?% 
+       'SAFE: Treatment successful for [slc_acct_roll_ever_24_cat].\n' %:% 
+       'ERROR: Treatment failed for [slc_acct_roll_ever_24_cat] \n')
+(var_Info_Num$slc_acct_roll_ever_24_cat <- describe(datCredit_smp$slc_acct_roll_ever_24_cat)); hist(datCredit_smp$slc_acct_roll_ever_24_cat, breaks='FD')
+
 
 # - Percentage-valued direction of prepaid/available funds - current compared to 12 months ago
 var_Info_Num$slc_acct_prepaid_perc_dir_12; hist(datCredit_smp[slc_acct_prepaid_perc_dir_12<=5, slc_acct_prepaid_perc_dir_12])
@@ -744,9 +633,16 @@ cat( (length(which(results_missingness > 0)) == 0) %?% "SAFE: No missingness, fu
        "WARNING: Missingness in certain macroecnomic fields detected, fusion compromised.\n")
 ### RESULTS: No missingness observed, continue with packing away the data
 
+# - Save a Macroeconomic Set that will be used in the Beta regression modelling
+max_Dte<-max(datCredit_smp$Date)
+min_Dte<-min(datCredit_smp$Date)
+Macros_Set<-datMV[(Date>=min_Dte)&(Date<max_Dte),]
+
+# - Pack away the Macros Set
+pack.ffdf(paste0(genPath, "creditdata_Macros_Set"), Macros_Set)
+
 # - Cleanup
 rm(datMV); gc()
-
 
 
 # --- Save "description" objects to disk
@@ -757,25 +653,31 @@ pack.ffdf(paste0(genObjPath, "var_Info_Num"), var_Info_Num)
 pack.ffdf(paste0(genPath, "creditdata_smp"), datCredit_smp); gc()
 
 
-
-
 # ------ 5. Apply basic cross-validation resampling scheme with 2-way stratified sampling
 
 # - Loading in the raw dataset
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_smp"), tempPath)
-datCredit_smp[, Ind := 1:.N] # prepare for resampling scheme
 
-# - Implement resampling scheme using given main sampling fraction
-set.seed(1, kind="Mersenne-Twister")
-datCredit_train <- datCredit_smp %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=train_prop) %>% as.data.table()
-datCredit_valid <- subset(datCredit_smp, !(Ind %in% datCredit_train$Ind)) %>% as.data.table()
+# - Set seed and training set proportion
+set.seed(1,kind="Mersenne-Twister")
+train_prop<-0.7
 
-# - Clean up
-datCredit_train[,Ind:=NULL]; datCredit_valid[,Ind:=NULL]
+# - Obtain first observations of all LoanIDs
+dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
+
+# - Use stratified sampling by the origination date using the LoanID's
+dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=train_prop)
+
+# - Create the subset dataset
+datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
+datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
 
 # - [SANITY CHECK] Ensuring that the resampling scheme reconstitutes the full (subsampled) dataset
 cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SAFE: Resampling scheme implemented successfully\n" %:%
        "WARNING: Resampling scheme not implemented successfully.\n")
+
+datCredit_train<-datCredit_train[To!="-99",]
+datCredit_valid<-datCredit_valid[To!="-99",]
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_train"), datCredit_train); gc()
@@ -787,5 +689,52 @@ rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
    stratifiers, smp_perc, smp_size, targetVar, timeVar, train_prop,
    datMV_Check1, datMV_Check2, list_merge_variables, results_missingness,
    ColNames, lags, datCredit_smp)
+
+# ------ 6. Beta regression data preperation
+# --- Create Target Variables, i.e., transition rates
+# - From performing
+Targets_P<-datCredit_train[Status=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                   Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                   Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                   Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                    by=list(Date)]
+# - From default
+Targets_D<-datCredit_train[Status=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                   Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                   Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                   Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                    by=list(Date)]
+
+# - Keep relevant features
+Features_Train<-datCredit_train[!duplicated(Date),]%>%select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
+Features_Train[,Date_Origination:=NULL]
+
+# - Engineer more portfolio level features
+Feature_Eng<-datCredit_train[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
+                             Ave_Margin=mean(InterestRate_Margin,na.rm=TRUE),
+                             g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
+                             g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
+                             g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
+
+# - Merge into one set that will be used to train all the BR-models
+BR_Set_T<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
+BR_Set_T<-merge(BR_Set_T, Targets_P,by="Date",all.x=TRUE)
+BR_Set_T<-merge(BR_Set_T, Targets_D,by="Date",all.x=TRUE)
+
+# - Create Previous transition rate Covariates
+Previous<-BR_Set_T[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
+                              Prev_PP=shift(Y_PerfToPerf,n=1,type="lag",fill=0),
+                              Prev_PS=shift(Y_PerfToSet,n=1,type="lag",fill=0),
+                              Prev_DP=shift(Y_DefToPerf,n=1,type="lag",fill=0),
+                              Prev_DW=shift(Y_DefToWO,n=1,type="lag",fill=0),
+                              Prev_DD=shift(Y_DefToDef,n=1,type="lag",fill=0),
+                              Prev_DS=shift(Y_DefToSet,n=1,type="lag",fill=0)
+)]
+
+# - Merge the previous months transition rates
+BR_Set_T<-merge(BR_Set_T, Previous,by="Date",all.x=TRUE)
+
+# - Pack away the BR training set
+pack.ffdf(paste0(genPath, "BR_Training"), BR_Set_T); gc()
 
 proc.time() - ptm # IGNORE: elapsed runtime

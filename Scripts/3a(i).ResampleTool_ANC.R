@@ -1,14 +1,16 @@
-# ============================= SUBSAMPLING & RESAMPLING SCHEME FOR PD MODELS ===========================
-# A tool for investigating subsampling & resampling parameters iteratively towards a PD-modelling setup 
-# (cross-sectiona modellingl
+# ========================== SUBSAMPLING & RESAMPLING SCHEME FOR MARKOV MODELS =========================
+# A tool for investigating subsampling & resampling parameters interactively towards obtaining a 
+# training and validation dataset that is representative to the population.
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Classifier Diagnostics
-# SCRIPT AUTHOR(S): Dr Arno Botha
+# SCRIPT AUTHOR(S): Dr Arno Botha, Roland Breedt
 
 # DESCRIPTION:
 # This ancillary & exploratory script implements a given sample size by first subsampling raw data
-# using 2-way stratified sampling before resampling into a basic cross-validation set (training:validation)
-# controlled by the sampling fraction, also using the same 2-way stratified sampling design.
+# using stratified sampling before resampling into a basic cross-validation set (training:validation)
+# controlled by the sampling fraction, also using the stratified sampling design.
+# Representativeness is checked through estimating a First-Order Time-Homogeneous Markov Chain on the
+# various datasets and also comparing the 12-month worst ever default rate over time.
 # ------------------------------------------------------------------------------------------------------
 # -- Script dependencies:
 #   - 0.Setup.R
@@ -17,10 +19,10 @@
 #   - 2b.Data_Prepare_Credit_Advanced.R
 #   - 2c.Data_Prepare_Credit_Advanced2.R
 #   - 2d.Data_Enrich.R
-#   - 2f.Data_Fusion1.R
+#   - 2e.Data_Fusion1.R
 
 # -- Inputs:
-#   - datCredit_real | Prepared from script 2f.
+#   - datCredit_real | Prepared from script 2e.
 #
 # -- Outputs:
 #   - Event rate graph across resampled set
@@ -34,128 +36,138 @@
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
 
+# - Only keep relevant columns for sampling analysis
+datCredit_real<-datCredit_real[,list(Date_Origination,Date,LoanID,Counter,DefaultStatus1,DefaultStatus1_lead_12_max,Status,To,WOff_Ind)]
+
 # - Confidence interval parameter
 confLevel <- 0.95
 
-# - Field names
-stratifiers <- c("DefaultStatus1_lead_12_max", "Date") # Must at least include target variable used in graphing event rate
-targetVar <- "DefaultStatus1_lead_12_max"
-currStatusVar <- "DefaultStatus1"
-timeVar <- "Date"
+# ------ 2. Subsampling scheme with 2-way stratified random sampling
+# --- Number of unique borrowers
+set.seed(1,kind="Mersenne-Twister")
+n_obs<-datCredit_real[,.N]
+n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
+cat("Nr of Loan Accounts in Dataset = ",n_loan_acc,"\n",sep="")
+### RESULTS: Nr of Loan Accounts in Dataset = 650715 which makes up the 47 939 860 observations
 
-# - Subset given dataset accordingly; an efficiency enhancement
-datCredit <- subset(datCredit_real, select=unique(c(stratifiers,targetVar,currStatusVar,timeVar))) %>% drop_na()
-datCredit[is.na(get(targetVar)), .N] == 0 # should be true
-rm(datCredit_real); gc()
+# ------ 1. Subsampling
+# --- Choose subset size (nr of borrowers)
+nr<-135000
+prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
+cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
+### RESULTS: Implied sampling fraction = 20.746%
 
-# - Subsampling & resampling parameters
-smp_size <- 1500000 # fixed size of downsampled set
-train_prop <- 0.7 # sampling fraction for resampling scheme
+# --- Obtain first observations of all LoanIDs
+dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
+# - Use stratified sampling by the origination date using the LoanID's
+dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=prop_sub)
 
+# - Create the subset dataset
+datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
+cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
+### RESULTS: Nr of observations in Subset = 9 571 146
 
+# ------ 2. Transition Probability Matrix (TPM) Analysis
+# --- Full dataset
+round(Markov_TPM(datCredit_real)*100,3)
 
-# ------ 2. Subsampled resampling scheme: basic cross-validation with 2-way stratified random sampling
+# - Check Performing To Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_real$Status=="Perf" & datCredit_real$To=="W_Off"),"\n",sep="")
+### RESULTS: Transitions = 2301
 
-# - Preliminaries
-smp_perc <- smp_size/datCredit[, .N] # Implied sampling fraction for downsampling step
+# --- Subsampled dataset
+round(Markov_TPM(datCredit_smp)*100,3)
 
-# - Downsample data into a set with a fixed size (using stratified sampling) before implementing resampling scheme
-set.seed(1)
-datCredit_smp <- datCredit %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=smp_perc) %>% as.data.table()
-#datCredit_smp <- datCredit %>% group_by(DefaultStatus1_lead_12_max, Date) %>% slice_sample(prop=train_prop) %>% as.data.table() # should yield same
-datCredit_smp[, Ind := 1:.N] # prepare for resampling scheme
+# - Check Performing To Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_smp$Status=="Perf" & datCredit_smp$To=="W_Off"),"\n",sep="")
+### RESULTS: Transitions = 469
 
-# - Implement resampling scheme using given main sampling fraction
-set.seed(1)
-datCredit_train <- datCredit_smp %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=train_prop) %>% as.data.table()
-#datCredit_train <- datCredit_smp %>% group_by(DefaultStatus1_lead_12_max, Date) %>% slice_sample(prop=train_prop) %>% as.data.table() # should yield same
-datCredit_valid <- subset(datCredit_smp, !(Ind %in% datCredit_train$Ind)) %>% as.data.table()
+# - Full TPM
+### RESULTS:       Perf    Def     Set     W_O  
+#            Perf: 98.956  0.298   0.741   0.005
+#            Def : 2.648   94.617  1.502   1.233
+#            Set : 0       0       100     0    
+#            W_O : 0       0       0       100  
 
+# - Subsample TPM
+### RESULTS:       Perf    Def     Set     W_O  
+#            Perf: 98.960  0.303   0.733   0.005
+#            Def : 2.682   94.623  1.482   1.213
+#            Set : 0       0       100     0    
+#            W_O : 0       0       0       100  
 
+# ------ 3. Resampling
+set.seed(1,kind="Mersenne-Twister")
+train_prop<-0.7
 
+# --- Obtain first observations of all LoanIDs
+dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
-# ------ 3. Frequency analysis on n-way stratified inner sampling technique
+# - Use stratified sampling by the origination date using the LoanID's
+dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=train_prop)
 
-# - Determine subsampling window given cross-sectional design
-def_StartDte <- min(datCredit_smp[,get(timeVar)], na.rm=T)
-def_EndDte <- max(datCredit_smp[,get(timeVar)], na.rm=T)
-maxDate <- def_EndDte - years(1) # A post-hoc filter, used for graphing purposes, given a 12-month outcome window
+# - Create the subset dataset
+datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
+datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
+cat("Nr of observations in Training Set = ",nrow(datCredit_train),"\n",sep="")
+cat("Nr of observations in Validation Set = ",nrow(datCredit_valid),"\n",sep="")
+### RESULTS: Nr of observations in the training set = 6 413 851
+#         :  Nr of observations in the validation set = 3 157 295
 
-# - Aggregate data according to the same n-way stratified sampling technique used within subsampling/resampling scheme
-datStrata <- datCredit_train[,list(Time=get(timeVar), Target=factor(get(targetVar)))][
-              Time >= def_StartDte & Time <= maxDate, list(Freq = .N), by=list(Target, Time)] %>% setkey(Time, Target)
-datStrata[, Freq_Time := sum(Freq,na.rm=T), by=list(Time)]
-datStrata[, Freq_Perc := Freq/sum(Freq,na.rm=T)]
-datStrata[, Freq_Time_Perc := Freq/Freq_Time]
-table(datCredit_train[get(timeVar) >= def_StartDte & get(timeVar) <= maxDate,get(targetVar)], 
-      datCredit_train[get(timeVar) >= def_StartDte & get(timeVar) <= maxDate,get(timeVar)]) %>% prop.table() # should give same results
+# - Check if split was done sucessfully | should be TRUE
+((datCredit_train[,.N]+datCredit_valid[,.N]) == datCredit_smp[,.N])
 
-# - Aesthetics engineering
-datStrata[, Facet_label := "Worst-ever aggregation approach"]
+# - Actual proportion of the training set
+datCredit_train[,.N]/datCredit_smp[,.N]
+### RESULTS: training set consists of 67% of the observations from the subsampled set
 
-# - Create summaries for annotations within graph
-table(datCredit_train[get(timeVar) >= def_StartDte & get(timeVar) <= maxDate, get(targetVar)]) %>% prop.table() # Prior probability P(D=1) over all observations: ~ 8.1%
-mean(datStrata[Target==1, Freq_Time_Perc], na.rm=T) # average E_t( P(D=1) ) over all time t ~ 8.0%
-datStrata_aggr <- datStrata[, list(StratumSize_N = .N, StratumSize_Min = min(Freq,na.rm=T), StratumSize_Mean = mean(Freq,na.rm=T),
-                                   StratumSize_SD = sd(Freq,na.rm=T))]
-datStrata_aggr[, StrataSize_Margin := qnorm(1-(1-confLevel)/2) * datStrata_aggr$StratumSize_SD / sqrt(datStrata_aggr$StratumSize_N)]
+# - Training dataset TPM
+round(Markov_TPM(datCredit_train)*100,3)
+# - Validation dataset TPM
+round(Markov_TPM(datCredit_valid)*100,3)
 
-# - Graphing parameters
-chosenFont <- "Cambria"; dpi <- 170
-vCol <- brewer.pal(8, "Dark2")[c(1,2)]
-vFill <- brewer.pal(8, "Set2")[c(1,2)]
+# - Train TPM
+### RESULTS:       Perf    Def     Set     W_O  
+#            Perf: 98.966  0.302   0.726   0.005
+#            Def : 2.673   94.625  1.490   1.212
+#            Set : 0.000   0.000   100.000 0.000
+#            W_O : 0       0       0       100  
 
-# - Create graph to evidence minimum strata sizes
-(g0 <- ggplot(datStrata, aes(x=Time, y=Freq, group=Target)) + theme_minimal() + 
-    labs(x=bquote("Reporting date (months) "*italic(t)), y=bquote("Account volumes in "*italic(D[T])~": "*.(round(train_prop*smp_size/1000))*"k observations")) + 
-    theme(text=element_text(family=chosenFont),legend.position = "bottom",
-          axis.text.x=element_text(angle=90), #legend.text=element_text(family=chosenFont), 
-          strip.background=element_rect(fill="snow2", colour="snow2"),
-          strip.text=element_text(size=8, colour="gray50"), strip.text.y.right=element_text(angle=90)) + 
-    # main bar graph
-    geom_bar(position="stack", stat="identity", aes(colour=Target, fill=Target), linewidth=0.25) + 
-    # annotations
-    annotate("text", x=as.Date("2013-02-28"), y=datStrata_aggr$StratumSize_Mean, size=3, family=chosenFont,
-             label=paste0(datStrata_aggr$StratumSize_N, " total strata with a mean cell size of ", 
-                          comma(datStrata_aggr$StratumSize_Mean, accuracy=0.1),
-                          " ± ", sprintf("%.1f", datStrata_aggr$StrataSize_Margin), " and a minimum size of ", 
-                          sprintf("%.0f", datStrata_aggr$StratumSize_Min))) +     
-    # facets & scale options
-    facet_grid(Facet_label ~ .) + 
-    scale_colour_manual(name="Default outcome (12-months)", values=vCol) + 
-    scale_fill_manual(name="Default outcome (12-months)", values=vFill) + 
-    scale_y_continuous(breaks=pretty_breaks(), label=comma) + 
-    scale_x_date(date_breaks=paste0(6, " month"), date_labels = "%b %Y") )
+# - Validation TPM
+### RESULTS:       Perf    Def     Set     W_O  
+#            Perf: 98.954  0.296   0.745   0.005
+#            Def : 2.633   94.592  1.555   1.220
+#            Set : 0.000   0.000   100.000 0 .00
+#            W_O : 0.000   0.000   0.000   100  
 
-# - Save graph
-ggsave(g0, file=paste0(genFigPath, "StrataDesign_Train_", round(smp_size/1000),"k.png"), width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white")
+# - Check Performing To Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_train$Status=="Perf" & datCredit_train$To=="W_Off"),"\n",sep="")
+### RESULTS: Transitions = 319
 
-# - Cleanup
-rm(datStrata, datStrata_aggr, g0)
-
-
+# - Check Performing To Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_valid$Status=="Perf" & datCredit_valid$To=="W_Off"),"\n",sep="")
+### RESULTS: Transitions = 150
 
 # ------ 4. Graphing event rates over time given resampled sets
-
 # - Check representatives | dataset-level proportions should be similar
-table(datCredit_smp[,get(targetVar)]) %>% prop.table()
-table(datCredit_train[,get(targetVar)]) %>% prop.table()
-table(datCredit_valid[,get(targetVar)]) %>% prop.table()
+table(datCredit_smp[,DefaultStatus1_lead_12_max]) %>% prop.table()
+table(datCredit_train[,DefaultStatus1_lead_12_max]) %>% prop.table()
+table(datCredit_valid[,DefaultStatus1_lead_12_max]) %>% prop.table()
 
 # - Merge samples together
-datGraph <- rbind(datCredit[, list(Time=get(timeVar), Status=get(currStatusVar), Target=get(targetVar), Sample = "a_Full")],
-                   datCredit_train[, list(Time=get(timeVar), Status=get(currStatusVar), Target=get(targetVar), Sample = "b_Train")],
-                   datCredit_valid[, list(Time=get(timeVar), Status=get(currStatusVar), Target=get(targetVar), Sample = "c_Valid")])
+datGraph <- rbind(datCredit_real[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "a_Full")],
+                   datCredit_train[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "b_Train")],
+                   datCredit_valid[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "c_Valid")])
 
 # - Setting some aggregation parameters, purely to facilitate graphing aesthetics
-def_StartDte <- min(datCredit[,get(timeVar)], na.rm=T)
-def_EndDte <- max(datCredit[,get(timeVar)], na.rm=T)
+def_StartDte <- min(datCredit_real[,Date], na.rm=T)
+def_EndDte <- max(datCredit_real[,Date], na.rm=T)
 maxDate <- def_EndDte - years(1) # A post-hoc filter, used for graphing purposes, given a 12-month outcome window
 
 # - Aggregate to monthly level and observe up to given point
 port.aggr <- datGraph[Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
-         by=list(Sample, Time)][Time >= def_StartDte & Time <= maxDate,] %>% setkey(Time)
+             by=list(Sample, Time)][Time >= def_StartDte & Time <= maxDate,] %>% setkey(Time)
 
 # - Aesthetics engineering
 port.aggr[, Facet_label := "Worst-ever aggregation approach"]
@@ -180,6 +192,7 @@ port.aggr2 <- port.aggr %>% pivot_wider(id_cols = c(Time), names_from = c(Sample
 
 # - Graphing parameters
 chosenFont <- "Cambria"; dpi <- 170
+smp_size<-nrow(datCredit_smp)
 vCol <- brewer.pal(9, "Set1")[c(1,5,2,4)]; size.v <- c(0.5,0.3,0.3,0.3)
 vLabel <- c("a_Full"=expression(italic(A)[t]*": Full set "*italic(D)),
              "b_Train"=bquote(italic(B)[t]*": Training set "*italic(D)[italic(T)]~"("*.(round(train_prop*smp_size/1000))*"k)"),

@@ -1271,3 +1271,25 @@ KS_discimination <- function(class0, class1, alpha=0.05) {
   return( resultSet )
 }
 
+# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
+# ...
+### INPUTS: 
+# - Dataset
+### OUTPUTS: TPM
+
+Markov_TPM<-function(DataSetMC){
+  TPM<-rbind(cbind(sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Perf"),
+                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Def"),
+                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Set"),
+                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Perf" & DataSetMC$To !=-99),
+             cbind(sum(DataSetMC$Status=="Def" & DataSetMC$To=="Perf"),
+                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="Def"),
+                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="Set"),
+                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Def" & DataSetMC$To !=-99),
+             c(0,0,1,0),c(0,0,0,1))
+  
+  rownames(TPM)<-c("Perf","Def","Set","W_O")
+  colnames(TPM)<-c("Perf","Def","Set","W_0")
+  return(TPM)
+}
+
