@@ -1281,11 +1281,11 @@ Markov_TPM<-function(DataSetMC){
   TPM<-rbind(cbind(sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Perf"),
                    sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Def"),
                    sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Set"),
-                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Perf" & DataSetMC$To !=-99),
+                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Perf" & DataSetMC$To!="NA"),
              cbind(sum(DataSetMC$Status=="Def" & DataSetMC$To=="Perf"),
                    sum(DataSetMC$Status=="Def" & DataSetMC$To=="Def"),
                    sum(DataSetMC$Status=="Def" & DataSetMC$To=="Set"),
-                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Def" & DataSetMC$To !=-99),
+                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Def" & DataSetMC$To !="NA"),
              c(0,0,1,0),c(0,0,0,1))
   
   rownames(TPM)<-c("Perf","Def","Set","W_O")

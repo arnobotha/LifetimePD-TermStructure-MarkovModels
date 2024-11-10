@@ -34,12 +34,7 @@
 
 
 # ------ 1.1 Preliminaries
-
 ptm <- proc.time() # for runtime calculations (ignore)
-
-# - Graphing
-chosenFont<-"Cambria"
-dpi<-180
 
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
@@ -57,11 +52,13 @@ datCredit_real[,Target_FromP:=relevel(factor(To),ref="Perf")]
 datCredit_real[,Target_FromD:=relevel(factor(To),ref="Def")]
 
 
-# ------ 2. Subsampling scheme with 2-way stratified random sampling
-# --- Set seed for sampling
-set.seed(1,kind="Mersenne-Twister")
 
-# ------ 1. Subsampling
+
+
+# ------ 2. Subsampling scheme with 2-way stratified random sampling
+# - Set seed for sampling
+set.seed(6,kind="Mersenne-Twister")
+
 # --- Choose subset size (nr of borrowers)
 n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
 nr<-135000
@@ -69,7 +66,7 @@ prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
 cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
 ### RESULTS: Implied sampling fraction = 20.746%
 
-# --- Obtain first observations of all LoanIDs
+# - Obtain first observations of all LoanIDs
 dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
 # - Use stratified sampling by the origination date using the LoanID's
@@ -78,10 +75,13 @@ dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=p
 # - Create the subset dataset
 datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
 cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
-### RESULTS: Nr of observations in Subset = 9 571 146
+### RESULTS: Nr of observations in Subset = 9 588 659
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_final4b"), datCredit_smp)
+
+
+
 
 
 # ------ 3. Fuse the input space with the subsampled prepared dataset
@@ -132,11 +132,11 @@ rm(datInput.raw, check_input2a, check_input2b, overlap_flds); gc()
 
 
 
+
 # ------- 4. Feature engineering for modelling purposes
 
 # - Load in main dataset (subsampled)
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c"), tempPath)
-
 
 # --- 1. Missing value indicators for the input space variables
 # NOTE: There are a lot of missing values for these variables because of system changes etc.
@@ -178,6 +178,7 @@ varList_Num <- c('slc_past_due_amt','slc_acct_pre_lim_perc','slc_acct_prepaid_pe
                  'TimeInDefSpell', 'DefSpell_Age', 'DefSpell_Counter',
                  'Event_Time', 'g0_Delinq_Num', 'g0_Delinq_SD', 'NewLoans_Aggr_Prop')
 var_Info_Num <- suppressWarnings(describe(subset(datCredit_smp, select = varList_Num)))
+
 
 
 # --- 3. Missing value treatment (categorical variables)
@@ -252,7 +253,7 @@ datCredit_smp[,slc_acct_roll_ever_24_cat:=factor(ifelse(is.na(slc_acct_roll_ever
 cat((datCredit_smp[is.na(slc_acct_roll_ever_24_cat), .N ] == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_roll_ever_24_cat].\n' %:% 
        'ERROR: Treatment failed for [slc_acct_roll_ever_24_cat] \n')
-(var_Info_Num$slc_acct_roll_ever_24_cat <- describe(datCredit_smp$slc_acct_roll_ever_24_cat)); hist(datCredit_smp$slc_acct_roll_ever_24_cat, breaks='FD')
+(var_Info_Num$slc_acct_roll_ever_24_cat <- describe(datCredit_smp$slc_acct_roll_ever_24_cat))
 
 
 # - Percentage-valued direction of prepaid/available funds - current compared to 12 months ago
@@ -653,7 +654,8 @@ pack.ffdf(paste0(genObjPath, "var_Info_Num"), var_Info_Num)
 pack.ffdf(paste0(genPath, "creditdata_smp"), datCredit_smp); gc()
 
 
-# ------ 5. Apply basic cross-validation resampling scheme with 2-way stratified sampling
+
+# --- 10. Apply basic cross-validation resampling scheme with 2-way stratified sampling
 
 # - Loading in the raw dataset
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_smp"), tempPath)
@@ -676,8 +678,8 @@ datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
 cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SAFE: Resampling scheme implemented successfully\n" %:%
        "WARNING: Resampling scheme not implemented successfully.\n")
 
-datCredit_train<-datCredit_train[To!="-99",]
-datCredit_valid<-datCredit_valid[To!="-99",]
+datCredit_train<-datCredit_train[To!="NA",]
+datCredit_valid<-datCredit_valid[To!="NA",]
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_train"), datCredit_train); gc()
@@ -690,7 +692,12 @@ rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
    datMV_Check1, datMV_Check2, list_merge_variables, results_missingness,
    ColNames, lags, datCredit_smp)
 
-# ------ 6. Beta regression data preperation
+
+
+
+
+# ----- 5. Beta regression data preperation
+# --- 1. Beta Regression Training Set
 # --- Create Target Variables, i.e., transition rates
 # - From performing
 Targets_P<-datCredit_train[Status=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
@@ -717,12 +724,12 @@ Feature_Eng<-datCredit_train[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Princ
                              g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
 
 # - Merge into one set that will be used to train all the BR-models
-BR_Set_T<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
-BR_Set_T<-merge(BR_Set_T, Targets_P,by="Date",all.x=TRUE)
-BR_Set_T<-merge(BR_Set_T, Targets_D,by="Date",all.x=TRUE)
+BR_Train<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
+BR_Train<-merge(BR_Train, Targets_P,by="Date",all.x=TRUE)
+BR_Train<-merge(BR_Train, Targets_D,by="Date",all.x=TRUE)
 
 # - Create Previous transition rate Covariates
-Previous<-BR_Set_T[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
+Previous<-BR_Train[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
                               Prev_PP=shift(Y_PerfToPerf,n=1,type="lag",fill=0),
                               Prev_PS=shift(Y_PerfToSet,n=1,type="lag",fill=0),
                               Prev_DP=shift(Y_DefToPerf,n=1,type="lag",fill=0),
@@ -732,9 +739,60 @@ Previous<-BR_Set_T[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
 )]
 
 # - Merge the previous months transition rates
-BR_Set_T<-merge(BR_Set_T, Previous,by="Date",all.x=TRUE)
+BR_Train<-merge(BR_Train, Previous,by="Date",all.x=TRUE)
 
-# - Pack away the BR training set
-pack.ffdf(paste0(genPath, "BR_Training"), BR_Set_T); gc()
+
+
+# --- 2. Beta Regression Validation Set
+# --- Create Target Variables, i.e., transition rates
+# - From performing
+Targets_P<-datCredit_valid[Status=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                               Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                               Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                               Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                           by=list(Date)]
+# - From default
+Targets_D<-datCredit_valid[Status=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                              Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                              Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                              Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                           by=list(Date)]
+
+# - Keep relevant features
+Features_Valid<-datCredit_valid[!duplicated(Date),]%>%select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
+Features_Valid[,Date_Origination:=NULL]
+
+# - Engineer more portfolio level features
+Feature_Eng<-datCredit_valid[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
+                                   Ave_Margin=mean(InterestRate_Margin,na.rm=TRUE),
+                                   g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
+                                   g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
+                                   g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
+
+# - Merge into one set that will be used to train all the BR-models
+BR_Valid<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
+BR_Valid<-merge(BR_Valid, Targets_P,by="Date",all.x=TRUE)
+BR_Valid<-merge(BR_Valid, Targets_D,by="Date",all.x=TRUE)
+
+# - Create Previous transition rate Covariates
+Previous<-BR_Valid[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
+                         Prev_PP=shift(Y_PerfToPerf,n=1,type="lag",fill=0),
+                         Prev_PS=shift(Y_PerfToSet,n=1,type="lag",fill=0),
+                         Prev_DP=shift(Y_DefToPerf,n=1,type="lag",fill=0),
+                         Prev_DW=shift(Y_DefToWO,n=1,type="lag",fill=0),
+                         Prev_DD=shift(Y_DefToDef,n=1,type="lag",fill=0),
+                         Prev_DS=shift(Y_DefToSet,n=1,type="lag",fill=0)
+)]
+
+# - Merge the previous months transition rates
+BR_Valid<-merge(BR_Valid, Previous,by="Date",all.x=TRUE)
+
+
+
+
+
+# - Pack away the BR training & validation set
+pack.ffdf(paste0(genPath, "BR_Training"), BR_Train)
+pack.ffdf(paste0(genPath, "BR_Validation"), BR_Valid); gc()
 
 proc.time() - ptm # IGNORE: elapsed runtime

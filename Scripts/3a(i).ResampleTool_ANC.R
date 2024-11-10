@@ -44,7 +44,7 @@ confLevel <- 0.95
 
 # ------ 2. Subsampling scheme with 2-way stratified random sampling
 # --- Number of unique borrowers
-set.seed(1,kind="Mersenne-Twister")
+set.seed(6,kind="Mersenne-Twister")
 n_obs<-datCredit_real[,.N]
 n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
 cat("Nr of Loan Accounts in Dataset = ",n_loan_acc,"\n",sep="")
@@ -66,7 +66,7 @@ dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=p
 # - Create the subset dataset
 datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
 cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
-### RESULTS: Nr of observations in Subset = 9 571 146
+### RESULTS: Nr of observations in Subset = 9 566 507
 
 # ------ 2. Transition Probability Matrix (TPM) Analysis
 # --- Full dataset
@@ -81,7 +81,7 @@ round(Markov_TPM(datCredit_smp)*100,3)
 
 # - Check Performing To Write-Off transition for a sufficient number of transitions
 cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_smp$Status=="Perf" & datCredit_smp$To=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 469
+### RESULTS: Transitions = 461
 
 # - Full TPM
 ### RESULTS:       Perf    Def     Set     W_O  
@@ -92,8 +92,8 @@ cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCr
 
 # - Subsample TPM
 ### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.960  0.303   0.733   0.005
-#            Def : 2.682   94.623  1.482   1.213
+#            Perf: 98.971  0.292   0.732   0.005
+#            Def : 2.649   94.638  1.461   1.252
 #            Set : 0       0       100     0    
 #            W_O : 0       0       0       100  
 
@@ -112,8 +112,8 @@ datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
 datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
 cat("Nr of observations in Training Set = ",nrow(datCredit_train),"\n",sep="")
 cat("Nr of observations in Validation Set = ",nrow(datCredit_valid),"\n",sep="")
-### RESULTS: Nr of observations in the training set = 6 413 851
-#         :  Nr of observations in the validation set = 3 157 295
+### RESULTS: Nr of observations in the training set = 6 416 906
+#         :  Nr of observations in the validation set = 3 171 753
 
 # - Check if split was done sucessfully | should be TRUE
 ((datCredit_train[,.N]+datCredit_valid[,.N]) == datCredit_smp[,.N])
@@ -129,21 +129,21 @@ round(Markov_TPM(datCredit_valid)*100,3)
 
 # - Train TPM
 ### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.966  0.302   0.726   0.005
-#            Def : 2.673   94.625  1.490   1.212
-#            Set : 0.000   0.000   100.000 0.000
+#            Perf: 98.975  0.293   0.727   0.005
+#            Def : 2.660   94.613  1.470   1.257
+#            Set : 0.000   0.000   100.00  0.000
 #            W_O : 0       0       0       100  
 
 # - Validation TPM
 ### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.954  0.296   0.745   0.005
-#            Def : 2.633   94.592  1.555   1.220
-#            Set : 0.000   0.000   100.000 0 .00
-#            W_O : 0.000   0.000   0.000   100  
+#            Perf: 98.962  0.291   0.742   0.005
+#            Def : 2.628   94.687  1.444   1.241
+#            Set : 0.000   0.000   100.0   0.000
+#            W_O : 0.000   0.000   0.000   100.0
 
 # - Check Performing To Write-Off transition for a sufficient number of transitions
 cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_train$Status=="Perf" & datCredit_train$To=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 319
+### RESULTS: Transitions = 311
 
 # - Check Performing To Write-Off transition for a sufficient number of transitions
 cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_valid$Status=="Perf" & datCredit_valid$To=="W_Off"),"\n",sep="")
@@ -183,12 +183,6 @@ port.aggr2 <- port.aggr %>% pivot_wider(id_cols = c(Time), names_from = c(Sample
 (diag.samplingRep.train <- mean(abs(port.aggr2$a_Full - port.aggr2$b_Train)) * 100)
 (diag.samplingRep.valid <- mean(abs(port.aggr2$a_Full - port.aggr2$c_Valid)) * 100)
 (diag.samplingRep.trainValid <- mean(abs(port.aggr2$b_Train - port.aggr2$c_Valid)) * 100)
-### RESULTS: Sample-size dependent
-# 100k-sample: Train: 0.57%; Validation: 0.87%
-# 1m-sample: Train: 0.18%; Validation: 0.28%
-# 1.5m-sample: Train: 0.16%; Validation: 0.22%
-# 2m-sample: Train: 0.12%; Validation: 0.2%
-# 4m-sample: Train: 0.08%; Validation: 0.14%
 
 # - Graphing parameters
 chosenFont <- "Cambria"; dpi <- 170

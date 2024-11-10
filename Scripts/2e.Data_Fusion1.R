@@ -359,7 +359,7 @@ datCredit_real[,Status := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
 ### RESULTS: 47 942 462 observations before exclusions; 47 939 860 after exclusions
 
 # - Calculate the State the borrower moves to
-datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill=NA),by=LoanID]
+datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill="NA"),by=LoanID]
 
 
 
