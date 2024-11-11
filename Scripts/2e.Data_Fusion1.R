@@ -228,14 +228,14 @@ describe(datCredit_real$g0_Delinq_Num)
 # This high max suggests outlier-accounts with rapid and frequent changes in g0
 
 
-# - Account-level standard deviation of the delinquency state
-datCredit_real[, g0_Delinq_SD := sd(g0_Delinq, na.rm=T), by=list(LoanID)]
-datCredit_real[is.na(g0_Delinq_SD), g0_Delinq_SD := 0] # Some missing values exist at loan accounts originating at the end of the sampling period | Assign zero values to these
-cat( (datCredit_real[is.na(g0_Delinq_SD), .N] == 0) %?% "SAFE: No missingness, [g0_Delinq_SD] created successfully.\n" %:%
-       "WARNING: Missingness detected, [g0_Delinq_SD] compromised.\n")
-describe(datCredit_real[, list(g0_Delinq_SD=mean(g0_Delinq_SD, na.rm=T)), by=list(LoanID)]$g0_Delinq_SD)
-### RESULT: mean account-level SD in delinquency states of 0.21; median: 0, but 95%-percentile of 1.19
-# This suggests that most accounts do not vary significantly in their delinquency states over loan life, which is sensible
+# # - Account-level standard deviation of the delinquency state
+# datCredit_real[, g0_Delinq_SD := sd(g0_Delinq, na.rm=T), by=list(LoanID)]
+# datCredit_real[is.na(g0_Delinq_SD), g0_Delinq_SD := 0] # Some missing values exist at loan accounts originating at the end of the sampling period | Assign zero values to these
+# cat( (datCredit_real[is.na(g0_Delinq_SD), .N] == 0) %?% "SAFE: No missingness, [g0_Delinq_SD] created successfully.\n" %:%
+#        "WARNING: Missingness detected, [g0_Delinq_SD] compromised.\n")
+# describe(datCredit_real[, list(g0_Delinq_SD=mean(g0_Delinq_SD, na.rm=T)), by=list(LoanID)]$g0_Delinq_SD)
+# ### RESULT: mean account-level SD in delinquency states of 0.21; median: 0, but 95%-percentile of 1.19
+# # This suggests that most accounts do not vary significantly in their delinquency states over loan life, which is sensible
 
 
 # - 4-,5-,6-,9- and 12 month rolling state standard deviation
@@ -276,13 +276,13 @@ cat( ( datCredit_real[is.na(PerfSpell_g0_Delinq_Num),.N]==datCredit_real[is.na(P
        'SAFE: New feature [PerfSpell_g0_Delinq_Num] has logical values.\n' %:% 
        'WARNING: New feature [PerfSpell_g0_Delinq_Num] has illogical values \n' )
 
-# - State standard deviation on the performance spell level
-datCredit_real[!is.na(PerfSpell_Key), PerfSpell_g0_Delinq_SD := sd(g0_Delinq), by=list(PerfSpell_Key)]
-datCredit_real[!is.na(PerfSpell_Key) & is.na(PerfSpell_g0_Delinq_SD), PerfSpell_g0_Delinq_SD := 0] # Assigning an standard deviation of zero to those performance spells that have an single observation
-# [SANITY CHECK] Check new feature for illogical values
-cat( ( datCredit_real[is.na(PerfSpell_g0_Delinq_SD),.N]==datCredit_real[is.na(PerfSpell_Key),.N]) %?% 
-       'SAFE: New feature [PerfSpell_g0_Delinq_SD] has logical values.\n' %:% 
-       'WARNING: New feature [PerfSpell_g0_Delinq_SD] has illogical values \n' )
+# # - State standard deviation on the performance spell level
+# datCredit_real[!is.na(PerfSpell_Key), PerfSpell_g0_Delinq_SD := sd(g0_Delinq), by=list(PerfSpell_Key)]
+# datCredit_real[!is.na(PerfSpell_Key) & is.na(PerfSpell_g0_Delinq_SD), PerfSpell_g0_Delinq_SD := 0] # Assigning an standard deviation of zero to those performance spells that have an single observation
+# # [SANITY CHECK] Check new feature for illogical values
+# cat( ( datCredit_real[is.na(PerfSpell_g0_Delinq_SD),.N]==datCredit_real[is.na(PerfSpell_Key),.N]) %?% 
+#        'SAFE: New feature [PerfSpell_g0_Delinq_SD] has logical values.\n' %:% 
+#        'WARNING: New feature [PerfSpell_g0_Delinq_SD] has illogical values \n' )
 
 
 # --- Create portfolio-level input variables that vary over time
@@ -348,15 +348,6 @@ describe(datCredit_real$NewLoans_Aggr_Prop); plot(unique(datCredit_real$NewLoans
 # - Write-Off = "W_Off"
 datCredit_real[,Status := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
                                     WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
-
-# --- First and Last Indicator variables for each observation
-#datCredit_real[,Nr_Obs:=.N,by=list(LoanID)]
-
-# --- Remove accounts that has only one observation; these accounts has no transitions
-#cat("Number of observations before single obs exclusions",datCredit_real[,.N],"\n")
-#datCredit_real<-datCredit_real[Nr_Obs>1,]
-#cat("Number of observations after single obs exclusions",datCredit_real[,.N],"\n")
-### RESULTS: 47 942 462 observations before exclusions; 47 939 860 after exclusions
 
 # - Calculate the State the borrower moves to
 datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill="NA"),by=LoanID]

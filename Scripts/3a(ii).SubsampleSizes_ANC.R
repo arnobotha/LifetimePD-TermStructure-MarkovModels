@@ -43,13 +43,13 @@ if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"),
 
 # - Subsampling & resampling parameters
 train_prop <- 0.7 # sampling fraction for resampling scheme
-stratifiers <- c("DefaultStatus1_lead_12_max", "Date") # Must at least include target variable used in graphing event rate
+stratifiers <- c("Date_Origination") # Must at least include target variable used in graphing event rate
 targetVar <- "DefaultStatus1_lead_12_max"
 currStatusVar <- "DefaultStatus1"
 timeVar <- "Date"
 
 # - Subset given dataset accordingly; an efficiency enhancement
-datCredit <- subset(datCredit_real, select=unique(c(stratifiers,targetVar,currStatusVar,timeVar))) %>% drop_na()
+datCredit <- subset(datCredit_real, select=unique(c(stratifiers,targetVar,currStatusVar,timeVar,"Counter","LoanID"))) %>% drop_na()
 datCredit[is.na(get(targetVar)), .N] == 0 # should be true
 rm(datCredit_real); gc()
 
@@ -100,13 +100,31 @@ subSmp_strat <- function(smp_size, train_prop, stratifiers=NA, targetVar=NA, cur
   
   # - Downsample data into a set with a fixed size (using stratified sampling) before implementing resampling scheme
   set.seed(seed)
-  datCredit_smp <- datGiven %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=smp_perc) %>% as.data.table()
-  datCredit_smp[, Ind := 1:.N] # prepare for resampling scheme
+  # datCredit_smp <- datGiven %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=smp_perc) %>% as.data.table()
+  # datCredit_smp[, Ind := 1:.N] # prepare for resampling scheme
+  ###
+  # - Obtain first observations of all LoanIDs
+  dat_temp <- datGiven %>% subset(Counter==1, c("LoanID", stratifiers))
   
+  # - Use stratified sampling by the origination date using the LoanID's
+  dat_sub_keys1 <- dat_temp %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop = smp_perc)
+  
+  # - Create the subset dataset
+  datCredit_smp <- datGiven %>% subset(LoanID %in% dat_sub_keys1$LoanID)
+  ###
   # - Implement resampling scheme using given main sampling fraction
   set.seed(seed)
-  datCredit_train <- datCredit_smp %>% group_by(across(all_of(stratifiers)))  %>% slice_sample(prop=train_prop) %>% as.data.table()
-  datCredit_valid <- subset(datCredit_smp, !(Ind %in% datCredit_train$Ind)) %>% as.data.table()
+  # datCredit_train <- datCredit_smp %>% group_by(across(all_of(stratifiers)))  %>% slice_sample(prop=train_prop) %>% as.data.table()
+  # datCredit_valid <- subset(datCredit_smp, !(Ind %in% datCredit_train$Ind)) %>% as.data.table()
+  
+  dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("LoanID", stratifiers))
+  
+  # - Use stratified sampling by the origination date using the LoanID's
+  dat_sub_keys2 <- dat_temp2 %>% group_by(across(all_of(stratifiers))) %>% slice_sample(prop=train_prop)
+  
+  # - Create the subset dataset
+  datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
+  datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
   
   
   # --- Calculate error measure 1: Difference in prior probabilities between population and training (as subsampled + resampled)

@@ -42,22 +42,29 @@ datCredit_real<-datCredit_real[,list(Date_Origination,Date,LoanID,Counter,Defaul
 # - Confidence interval parameter
 confLevel <- 0.95
 
-# ------ 2. Subsampling scheme with 2-way stratified random sampling
-# --- Number of unique borrowers
+
+
+
+# ------ 2. Subsampling scheme with stratified random sampling
+# --- 0. Initial paramaterisation
 set.seed(6,kind="Mersenne-Twister")
 n_obs<-datCredit_real[,.N]
 n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
 cat("Nr of Loan Accounts in Dataset = ",n_loan_acc,"\n",sep="")
 ### RESULTS: Nr of Loan Accounts in Dataset = 650715 which makes up the 47 939 860 observations
 
-# ------ 1. Subsampling
-# --- Choose subset size (nr of borrowers)
+# - Testing feasibility of stratifier
+DatPlot<-datCredit_real[,list(NrOrig=.N),by=list(Date_Origination)]
+plot(DatPlot$Date_Origination,DatPlot$NrOrig,type="p")
+
+# --- 1. Subsampling
+# - Choose subset size (nr of borrowers)
 nr<-135000
 prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
 cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
 ### RESULTS: Implied sampling fraction = 20.746%
 
-# --- Obtain first observations of all LoanIDs
+# - Obtain first observations of all LoanIDs
 dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
 # - Use stratified sampling by the origination date using the LoanID's
@@ -68,7 +75,8 @@ datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
 cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
 ### RESULTS: Nr of observations in Subset = 9 566 507
 
-# ------ 2. Transition Probability Matrix (TPM) Analysis
+
+# --- 2. Transition Probability Matrix (TPM) Analysis
 # --- Full dataset
 round(Markov_TPM(datCredit_real)*100,3)
 
@@ -105,7 +113,7 @@ train_prop<-0.7
 dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
 # - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=train_prop)
+dat_sub_keys2 <- dat_temp2 %>% slice_sample(prop=train_prop)
 
 # - Create the subset dataset
 datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
@@ -115,11 +123,11 @@ cat("Nr of observations in Validation Set = ",nrow(datCredit_valid),"\n",sep="")
 ### RESULTS: Nr of observations in the training set = 6 416 906
 #         :  Nr of observations in the validation set = 3 171 753
 
-# - Check if split was done sucessfully | should be TRUE
+# - Check if split was done successfully | should be TRUE
 ((datCredit_train[,.N]+datCredit_valid[,.N]) == datCredit_smp[,.N])
 
 # - Actual proportion of the training set
-datCredit_train[,.N]/datCredit_smp[,.N]
+datCredit_train[Counter==1,.N]/datCredit_smp[Counter==1,.N]*100
 ### RESULTS: training set consists of 67% of the observations from the subsampled set
 
 # - Training dataset TPM
