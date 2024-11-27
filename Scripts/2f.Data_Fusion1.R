@@ -198,7 +198,7 @@ datCredit_real$DefaultStatus1_lead_12_max %>% table() %>% prop.table()
 datCredit_real <- datCredit_real %>% relocate(DefaultStatus1_lead_12_max, .after=DefaultStatus1)
 
 
-# --- Delinquency-themed variables on a loan-level
+# --- Delinquency-themed variables at the loan-level
 
 # - Embed previous defaults into a new Boolean-valued input variable
 datCredit_real[, PrevDefaults := ifelse(all(is.na(PerfSpell_Num)), F, max(PerfSpell_Num,na.rm = T) > 1), by=list(LoanID)]
