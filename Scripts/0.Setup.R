@@ -70,55 +70,32 @@ d <- 3 # default threshold for g0/g1-measures of delinquency (payments in arrear
 k <- 6 # Probation period
 
 
-# -- Path variables | General
-
-# - Common path for saving big data objects
-genPath <- "C:/Data/Markov_Data/"
-
-# - Common path for importing raw data
-genRawPath <- "C:/Data/"
-
-
 # -- Path variables | User-dependent
 
-if (Sys.getenv("USERNAME") == "WRQ") {
-  # - Custom path where R-scripts are saved
-  path_cust <- "C:/Users/WRQ/OneDrive - FRG/Analytix/Research/Classifier-Diagnostics/Scripts/"
-  
-  # - Common path for storing important R-objects as back-up
-  genObjPath <- "C:/Users/WRQ/OneDrive - FRG/Analytix/Research/Classifier-Diagnostics/Objects/"
-  
-  # - Common path for saving important analytics (e.g., sampling)
-  genFigPath <- "C:/Users/WRQ/OneDrive - FRG/Analytix/Research/Classifier-Diagnostics/Figures/"
-  
-  # --- Custom path where R-scripts are saved
-} else if (Sys.getenv("USERNAME") == "Arno Botha") {
-  path_cust <- "E:/WorkLife/Analytix/Research/Classifier-Diagnostics/Scripts/"
-  
-  # - Common path for storing important R-objects as back-up
-  genObjPath <- "E:/WorkLife/Analytix/Research/Classifier-Diagnostics/Objects/"
-  
-  # - Common path for saving important analytics (e.g., sampling)
-  genFigPath <- "E:/WorkLife/Analytix/Research/Classifier-Diagnostics/Figures/"
-  
-  # - Common path for saving big data objects
-  genPath <- "E:/DataDump/FNB SLC/Classifier-Diagnostics_Data/"
-  
-  # - Common path for importing raw data
-  genRawPath <- "E:/DataDump/FNB SLC/"
-  
-} else if (Sys.getenv("USERNAME") == "R5668395" | Sys.getenv("USERNAME") == "r5668395") { # Roland
-  # - Custom path where R-scripts are saved
+if (Sys.getenv("USERNAME") == "Arno Botha") { # Dr Arno Botha | Kralkatorrik-machine
+  # - Common path for saving large R-objects as back-up and/or as reusable checkpoints
+  genPath <- "E:/DataDump/RetailMortgages-FNB/LifetimePD-TermStructure-MarkovModels_Data/"
+  # - Common path from which raw big datasets are imported
+  genRawPath <- "E:/DataDump/RetailMortgages-FNB/"
+  # - Common path for sourcing R-scripts in main codebase
+  path_cust <- "E:/Backupz/Google Drive/WorkLife/Analytix/R&D Codebases/LifetimePD-TermStructure-MarkovModels/Scripts/"
+  # - Common path for storing important (but small!) R-objects as back-up
+  genObjPath <- "E:/Backupz/Google Drive/WorkLife/Analytix/R&D Codebases/LifetimePD-TermStructure-MarkovModels/Objects/"
+  # - Common path for saving important analytics and figures
+  genFigPath <- "E:/Backupz/Google Drive/WorkLife/Analytix/R&D Codebases/LifetimePD-TermStructure-MarkovModels/Figures/"
+} else if (toupper(Sys.getenv("USERNAME")) == "R5668395") { # Roland Roland | Botha-machine
+  # - Common path for saving large R-objects as back-up and/or as reusable checkpoints
+  genPath <- "C:/Data/Classifier-Diagnostics_Data/"
+  # - Common path from which raw big datasets are imported
+  genRawPath <- "C:/Data/"
+  # - Common path for sourcing R-scripts in main codebase
   path_cust <- "C:/Users/R5668395/Documents/GitHub Markov/LifetimePD-TermStructure-MarkovModels/Scripts/"
-  
-  # - Common path for storing important R-objects as back-up
+  # - Common path for storing important (but small!) R-objects as back-up
   genObjPath <- "C:/Users/R5668395/Documents/GitHub Markov/LifetimePD-TermStructure-MarkovModels/Objects/"
-  
-  # - Common path for saving important analytics (e.g., sampling)
+  # - Common path for saving important analytics and figures
   genFigPath <- "C:/Users/R5668395/Documents/GitHub Markov/LifetimePD-TermStructure-MarkovModels/Figures/"
-  
 } else {
-    stop("User-specific paths not set for current user: ", Sys.getenv("USERNAME"), ". Please fix in Setup script (0.Setup.R) before continuing")
+  stop("User-specific paths not set for current user: ", Sys.getenv("USERNAME"), ". Please fix in Setup script (0.Setup.R) before continuing")
 }
 
 
