@@ -7,7 +7,10 @@
 
 # DESCRIPTION:
 # This script performs the following high-level tasks:
-#   1) Apply preliminary exclusions and assess impact using event rate
+#   1a) Isolate newly-disbursed loans at the end of the study period since
+#       they will contribute zero to Markov-type modelling given that their 
+#       lengths are universally 1 period long.
+#   1b) Apply preliminary exclusions and assess impact using event rate
 #   2a) Removes a few variables that are unlikely to be useful within the context of 
 #      analysing/modelling of default risk.
 #   2b) Fuses macroeconomic data unto the main credit dataset
@@ -15,6 +18,7 @@
 #       itself used in tracking influence of exclusions
 #   3b) Engineers a few basic features that require entire loan histories, given
 #       the intended (non-clustered) subsampling scheme in script 3-series
+#   4) Embeds a given state space for Markov-type modelling in future
 # ---------------------------------------------------------------------------------------
 # -- Script dependencies:
 #   - 0.Setup.R
@@ -36,7 +40,10 @@
 
 
 
-# ------- 1. Isolate (new) single-record cases in preparation for Markov-type modelling
+# ------- 1. Isolate single-record cases (newly-disbursed loans) at the end of the sampling window
+# Doing so is simply in preparation for Markov-type modelling, since the eventual 
+# [MarkovState_Future]-field will universally contain missing values for these cases and therefore be
+# useless.
 
 ptm <- proc.time() # for runtime calculations (ignore)
 
@@ -46,7 +53,11 @@ if (!exists('datMV')) unpack.ffdf(paste0(genPath,"datMV"), tempPath)
 if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd"), tempPath)
 
 # [DIAGNOSTIC] Account-level and dataset-wide impacts of exclusion
-diag.real12a <-  datCredit_real[ExclusionID == 0 & Counter == 1 & Max_Counter == 1, .N] / 
+# First, create an intermediary variable as an expediency
+datCredit_real[ExclusionID == 0 & Counter == 1 & Max_Counter == 1, 
+               Date_Origination_short := format(Date_Origination, "%Y%m")]
+diag.real12a <-  datCredit_real[ExclusionID == 0 & Counter == 1 & Max_Counter == 1 & 
+                                  Date_Origination_short==format(maxDate_observed, "%Y%m"), .N] / 
   datCredit_real[ExclusionID == 0 & Counter == 1, .N] * 100 
 diag.real12a_abs <- datCredit_real[ExclusionID == 0 & Max_Counter == 1, .N]
 diag.real12a_rec <-  diag.real12a_abs / datCredit_real[ExclusionID == 0, .N] * 100
@@ -54,11 +65,12 @@ diag.real12a_rec <-  diag.real12a_abs / datCredit_real[ExclusionID == 0, .N] * 1
 # - Conditional exclusion
 if (diag.real12a > 0) {
   
-  cat("EXCLUSION: New single-record cases. Prevalence: ", round(diag.real12a,digits=1), "% of accounts (",
-      round(diag.real12a_rec,digits=1), "% of records).\n")
+  cat("EXCLUSION: Newly-disbursed single-record cases detected, coinciding at study-end. Prevalence: ", 
+      round(diag.real12a,digits=1), "% of accounts (", round(diag.real12a_rec,digits=1), "% of records).\n")
   
   # - Mark affected records for exclusion later with an ID-value
-  LoanIDs <- unique(subset(datCredit_real, ExclusionID == 0 & Counter == 1 & Max_Counter == 1, select="LoanID"))
+  LoanIDs <- unique(subset(datCredit_real, ExclusionID == 0 & Counter == 1 & Max_Counter == 1 & 
+                             Date_Origination_short==format(maxDate_observed, "%Y%m"), select="LoanID"))
   datCredit_real[LoanID %in% LoanIDs$LoanID, ExclusionID := 8]
   
   # [SANITY CHECK] Treatment success?
@@ -73,6 +85,9 @@ if (diag.real12a > 0) {
                         "Impact_records" = diag.real12a_abs)
   if (exists('datExclusions')) datExclusions <- rbind(datExclusions, datExcl) else datExclusions <- datExcl
 }
+
+# - Cleanup
+datCredit_real[, Date_Origination_short := NULL]
 
 
 
@@ -143,6 +158,8 @@ datCredit_real <- subset(datCredit_real,
                          select = -c(Age, AccountStatus, DelinqState_g0, 
                                      # The following fields are kept simply for diagnostic purposes (script 2g)
                                      #DefaultStatus1, DefSpell_Num, TimeInDefSpell, TreatmentID, 
+                                     # The following fields are kept for Markov-type modelling
+                                     #WOff_Ind, EarlySettle_Ind, Repaid_Ind
                                      # The following fields are related to default spells (LGD-modelling)
                                      DefSpell_LeftTrunc, DefSpell_Event, DefSpell_Censored,
                                      DefSpellResol_TimeEnd, DefSpell_Age, DefSpellResol_Type_Hist,
@@ -150,14 +167,13 @@ datCredit_real <- subset(datCredit_real,
                                      # The following fields are intermediary ones and/or are (should) never used analytically 
                                      # or predictively within the current project's context
                                      PerfSpell_TimeEnd, Account_Censored, ZeroBal_Start, NCA_CODE, STAT_CDE, LN_TPE,
-                                     CLS_STAMP, WOff_Ind, WriteOff_Amt, EarlySettle_Ind, EarlySettle_Amt, 
-                                     Curing_Ind, BOND_IND, Undrawn_Amt,
+                                     CLS_STAMP, WriteOff_Amt, EarlySettle_Amt, Curing_Ind, BOND_IND, Undrawn_Amt,
                                      # The following are needless account-level flags
                                      HasRepaid, HasLeftTruncDefSpell, HasLeftTruncPerfSpell, HasTrailingZeroBalances,
                                      HasWOff, HasClosure, HasSettle, HasFurtherLoan, HasRedraw,
                                      # The following do not typically add any predictive value, whilst their creation in the 
                                      # underlying SAS-based DataFeed is in itself suspicious
-                                     FurtherLoan_Amt, FurtherLoan_Ind, Redraw_Ind, Redrawn_Amt, Repaid_Ind,
+                                     FurtherLoan_Amt, FurtherLoan_Ind, Redraw_Ind, Redrawn_Amt,
                                      # The following are suspicious fields or originate from other suspicious fields
                                      ReceiptPV, LossRate_Real, slc_past_due_amt
                          )); gc()
@@ -185,7 +201,7 @@ rm(datMV); gc()
 
 
 
-# ------- 4. Feature Engineering that needs entire loan- and spell histories
+# ------- 4. Feature Engineering that requires entire loan- and spell histories
 
 # --- Create preliminary target/outcome variables for stated modelling objective
 # NOTE: This particular field is instrumental to designing the subsampling & resampling scheme,
@@ -234,16 +250,6 @@ describe(datCredit_real$g0_Delinq_Num)
 # This high max suggests outlier-accounts with rapid and frequent changes in g0
 
 
-# # - Account-level standard deviation of the delinquency state
-# datCredit_real[, g0_Delinq_SD := sd(g0_Delinq, na.rm=T), by=list(LoanID)]
-# datCredit_real[is.na(g0_Delinq_SD), g0_Delinq_SD := 0] # Some missing values exist at loan accounts originating at the end of the sampling period | Assign zero values to these
-# cat( (datCredit_real[is.na(g0_Delinq_SD), .N] == 0) %?% "SAFE: No missingness, [g0_Delinq_SD] created successfully.\n" %:%
-#        "WARNING: Missingness detected, [g0_Delinq_SD] compromised.\n")
-# describe(datCredit_real[, list(g0_Delinq_SD=mean(g0_Delinq_SD, na.rm=T)), by=list(LoanID)]$g0_Delinq_SD)
-# ### RESULT: mean account-level SD in delinquency states of 0.21; median: 0, but 95%-percentile of 1.19
-# # This suggests that most accounts do not vary significantly in their delinquency states over loan life, which is sensible
-
-
 # - 4-,5-,6-,9- and 12 month rolling state standard deviation
 # NOTE: Usefulness of each time window length will yet be determined during prototyping/modelling
 SD_LoanLevel<-datCredit_real[,list(SD_Loans=sd(g0_Delinq,na.rm=TRUE)),by=list(LoanID)] # Create standard deviation variable for each loan account
@@ -282,13 +288,6 @@ cat( ( datCredit_real[is.na(PerfSpell_g0_Delinq_Num),.N]==datCredit_real[is.na(P
        'SAFE: New feature [PerfSpell_g0_Delinq_Num] has logical values.\n' %:% 
        'WARNING: New feature [PerfSpell_g0_Delinq_Num] has illogical values \n' )
 
-# # - State standard deviation on the performance spell level
-# datCredit_real[!is.na(PerfSpell_Key), PerfSpell_g0_Delinq_SD := sd(g0_Delinq), by=list(PerfSpell_Key)]
-# datCredit_real[!is.na(PerfSpell_Key) & is.na(PerfSpell_g0_Delinq_SD), PerfSpell_g0_Delinq_SD := 0] # Assigning an standard deviation of zero to those performance spells that have an single observation
-# # [SANITY CHECK] Check new feature for illogical values
-# cat( ( datCredit_real[is.na(PerfSpell_g0_Delinq_SD),.N]==datCredit_real[is.na(PerfSpell_Key),.N]) %?% 
-#        'SAFE: New feature [PerfSpell_g0_Delinq_SD] has logical values.\n' %:% 
-#        'WARNING: New feature [PerfSpell_g0_Delinq_SD] has illogical values \n' )
 
 
 # --- Create portfolio-level input variables that vary over time
@@ -336,35 +335,30 @@ for (i in 1:length(list_merge_variables)){
 }
 cat( (length(which(results_missingness > 0)) == 0) %?% "SAFE: No missingness, fusion with aggregated data is successful.\n" %:%
        "WARNING: Missingness in certain aggregated fields detected, fusion compromised.\n")
-describe(datCredit_real$NewLoans_Aggr_Prop); plot(unique(datCredit_real$NewLoans_Aggr_Prop), type="b")
+#describe(datCredit_real$NewLoans_Aggr_Prop); plot(unique(datCredit_real$NewLoans_Aggr_Prop), type="b")
 ### RESULTS: Variable has mean of 0.008 vs median of 0.007,
 # bounded by [0.003, 0.014] for 5%-95% percentiles; no major outliers
 
 
 
 
-# ------ 5. General Markov Data prep
-# --- Order the dataset in ascending LoanID then ascending Date within
-# datCredit_real<-datCredit_real[order(datCredit_real$LoanID, datCredit_real$Date),]
-
-# - Calculate account Status ,i.e., State the loan is in within the state space
-# - Performing = "Perf"
-# - Default = "Def"
-# - Settlement = "Set"
-# - Write-Off = "W_Off"
-datCredit_real[,Status := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
+# ------ 5. Enforce a given state space for Markov-type modelling
+# - Create [Status] as the State in which the loan resides at any given point of its history
+# Performing = "Perf"; Default = "Def"; Settlement = "Set"; Write-Off = "W_Off"
+datCredit_real[,MarkovStatus := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
                                     WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
 
-# - Calculate the State the borrower moves to
-datCredit_real[,To:=shift(x=Status,n=1,type="lead",fill="NA"),by=LoanID]
+# - Lead the [Status] by 1 period, thereby observing the future 1-period state of each loan
+datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill="NA"),by=LoanID]
 
 
 
 
 # ------ 6. General cleanup & checks
 
-# - remove intermediary fields, as a memory enhancement
-datCredit_real[, g0_Delinq_Shift := NULL]
+# - remove intermediary and redundant fields
+datCredit_real <- subset(datCredit_real, 
+                         select = -c(WOff_Ind, EarlySettle_Ind, Repaid_Ind, g0_Delinq_Shift)); gc()
 
 # - Clean-up
 rm(list_merge_variables, results_missingness, port.aggr, dat_NewLoans_Aggr)

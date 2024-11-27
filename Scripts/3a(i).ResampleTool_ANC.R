@@ -37,7 +37,8 @@
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
 
 # - Only keep relevant columns for sampling analysis
-datCredit_real<-datCredit_real[,list(Date_Origination,Date,LoanID,Counter,DefaultStatus1,DefaultStatus1_lead_12_max,Status,To,WOff_Ind)]
+datCredit_real<-datCredit_real[,list(Date_Origination, Date, LoanID, Counter, DefaultStatus1, DefaultStatus1_lead_12_max,
+                                     MarkovStatus, MarkovStatus_Future, WOff_Ind)]
 
 # - Confidence interval parameter
 confLevel <- 0.95
@@ -80,15 +81,15 @@ cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
 # --- Full dataset
 round(Markov_TPM(datCredit_real)*100,3)
 
-# - Check Performing To Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_real$Status=="Perf" & datCredit_real$To=="W_Off"),"\n",sep="")
+# - Check Performing to Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_real$MarkovStatus=="Perf" & datCredit_real$MarkovStatus_Future=="W_Off"),"\n",sep="")
 ### RESULTS: Transitions = 2301
 
 # --- Subsampled dataset
 round(Markov_TPM(datCredit_smp)*100,3)
 
-# - Check Performing To Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_smp$Status=="Perf" & datCredit_smp$To=="W_Off"),"\n",sep="")
+# - Check Performing to Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_smp$MarkovStatus=="Perf" & datCredit_smp$MarkovStatus_Future=="W_Off"),"\n",sep="")
 ### RESULTS: Transitions = 461
 
 # - Full TPM
@@ -149,12 +150,12 @@ round(Markov_TPM(datCredit_valid)*100,3)
 #            Set : 0.000   0.000   100.0   0.000
 #            W_O : 0.000   0.000   0.000   100.0
 
-# - Check Performing To Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_train$Status=="Perf" & datCredit_train$To=="W_Off"),"\n",sep="")
+# - Check Performing to Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_train$MarkovStatus=="Perf" & datCredit_train$MarkovStatus_Future=="W_Off"),"\n",sep="")
 ### RESULTS: Transitions = 311
 
-# - Check Performing To Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_valid$Status=="Perf" & datCredit_valid$To=="W_Off"),"\n",sep="")
+# - Check Performing to Write-Off transition for a sufficient number of transitions
+cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_valid$MarkovStatus=="Perf" & datCredit_valid$MarkovStatus_Future=="W_Off"),"\n",sep="")
 ### RESULTS: Transitions = 150
 
 # ------ 4. Graphing event rates over time given resampled sets
@@ -164,9 +165,9 @@ table(datCredit_train[,DefaultStatus1_lead_12_max]) %>% prop.table()
 table(datCredit_valid[,DefaultStatus1_lead_12_max]) %>% prop.table()
 
 # - Merge samples together
-datGraph <- rbind(datCredit_real[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "a_Full")],
-                   datCredit_train[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "b_Train")],
-                   datCredit_valid[, list(Time=Date, Status=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "c_Valid")])
+datGraph <- rbind(datCredit_real[, list(Time=Date, MarkovStatus=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "a_Full")],
+                   datCredit_train[, list(Time=Date, MarkovStatus=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "b_Train")],
+                   datCredit_valid[, list(Time=Date, MarkovStatus=DefaultStatus1, Target=DefaultStatus1_lead_12_max, Sample = "c_Valid")])
 
 # - Setting some aggregation parameters, purely to facilitate graphing aesthetics
 def_StartDte <- min(datCredit_real[,Date], na.rm=T)
@@ -174,7 +175,7 @@ def_EndDte <- max(datCredit_real[,Date], na.rm=T)
 maxDate <- def_EndDte - years(1) # A post-hoc filter, used for graphing purposes, given a 12-month outcome window
 
 # - Aggregate to monthly level and observe up to given point
-port.aggr <- datGraph[Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
+port.aggr <- datGraph[MarkovStatus==0, list(EventRate = sum(Target, na.rm=T)/.N),
              by=list(Sample, Time)][Time >= def_StartDte & Time <= maxDate,] %>% setkey(Time)
 
 # - Aesthetics engineering

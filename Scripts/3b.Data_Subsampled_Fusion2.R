@@ -42,14 +42,14 @@ if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd-E
 
 # ------ 1. General Markov Data prep
 # --- Creating Indicator variables that do not overlap
-datCredit_real[,Mark_Perf_Ind:=ifelse(To=="Perf",1,0)]
-datCredit_real[,Mark_Def_Ind:=ifelse(To=="Def",1,0)]
-datCredit_real[,Mark_Set_Ind:=ifelse(To=="Set",1,0)]
-datCredit_real[,Mark_WO_Ind:=ifelse(To=="W_Off",1,0)]
+datCredit_real[,Mark_Perf_Ind:=ifelse(MarkovStatus_Future=="Perf",1,0)]
+datCredit_real[,Mark_Def_Ind:=ifelse(MarkovStatus_Future=="Def",1,0)]
+datCredit_real[,Mark_Set_Ind:=ifelse(MarkovStatus_Future=="Set",1,0)]
+datCredit_real[,Mark_WO_Ind:=ifelse(MarkovStatus_Future=="W_Off",1,0)]
 
 # - Set Reference Category for multinomial model (Performing for "From Performing" transitions and Default for "From Default" transitions)
-datCredit_real[,Target_FromP:=relevel(factor(To),ref="Perf")]
-datCredit_real[,Target_FromD:=relevel(factor(To),ref="Def")]
+datCredit_real[,Target_FromP:=relevel(factor(MarkovStatus_Future),ref="Perf")]
+datCredit_real[,Target_FromD:=relevel(factor(MarkovStatus_Future),ref="Def")]
 
 
 
@@ -678,8 +678,8 @@ datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
 cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SAFE: Resampling scheme implemented successfully\n" %:%
        "WARNING: Resampling scheme not implemented successfully.\n")
 
-datCredit_train<-datCredit_train[To!="NA",]
-datCredit_valid<-datCredit_valid[To!="NA",]
+datCredit_train<-datCredit_train[MarkovStatus_Future!="NA",]
+datCredit_valid<-datCredit_valid[MarkovStatus_Future!="NA",]
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_train"), datCredit_train); gc()
@@ -700,13 +700,13 @@ rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
 # --- 1. Beta Regression Training Set
 # --- Create Target Variables, i.e., transition rates
 # - From performing
-Targets_P<-datCredit_train[Status=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+Targets_P<-datCredit_train[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                    Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                    Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                    Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                     by=list(Date)]
 # - From default
-Targets_D<-datCredit_train[Status=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+Targets_D<-datCredit_train[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                    Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                    Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                    Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
@@ -746,13 +746,13 @@ BR_Train<-merge(BR_Train, Previous,by="Date",all.x=TRUE)
 # --- 2. Beta Regression Validation Set
 # --- Create Target Variables, i.e., transition rates
 # - From performing
-Targets_P<-datCredit_valid[Status=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+Targets_P<-datCredit_valid[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                                Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                                Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                                Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                            by=list(Date)]
 # - From default
-Targets_D<-datCredit_valid[Status=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+Targets_D<-datCredit_valid[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                               Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                               Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                               Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),

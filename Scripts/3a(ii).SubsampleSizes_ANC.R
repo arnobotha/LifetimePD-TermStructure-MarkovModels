@@ -63,7 +63,7 @@ def_StartDte <- min(datCredit[,get(timeVar)], na.rm=T)
 def_EndDte <- max(datCredit[,get(timeVar)], na.rm=T)
 maxDate <- def_EndDte - years(1)
 eventRate_pop <- datCredit[, list(Target=get(targetVar), 
-                                       Status=get(currStatusVar), Time=get(timeVar))][Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
+                                       MarkovStatus=get(currStatusVar), Time=get(timeVar))][MarkovStatus==0, list(EventRate = sum(Target, na.rm=T)/.N),
                     by=list(Time)][Time >= def_StartDte & Time <= maxDate, ][order(Time), EventRate]
 plot(eventRate_pop, type="b")
 
@@ -158,7 +158,7 @@ subSmp_strat <- function(smp_size, train_prop, stratifiers=NA, targetVar=NA, cur
       def_EndDte <- max(datGiven[,get(timeVar)], na.rm=T)
       maxDate <- def_EndDte - years(1)
       eventRate_pop <- datGiven[, list(Target=get(targetVar), 
-                                             Status=get(currStatusVar), Time=get(timeVar))][Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
+                                             MarkovStatus=get(currStatusVar), Time=get(timeVar))][MarkovStatus==0, list(EventRate = sum(Target, na.rm=T)/.N),
                by=list(Time)][Time >= def_StartDte & Time <= maxDate,][order(Time), EventRate]
     }
     
@@ -167,13 +167,13 @@ subSmp_strat <- function(smp_size, train_prop, stratifiers=NA, targetVar=NA, cur
     def_EndDte <- max(datCredit_train[,get(timeVar)], na.rm=T)
     maxDate <- def_EndDte - years(1)
     eventRate_train <- datCredit_train[, list(Target=get(targetVar), 
-                                           Status=get(currStatusVar), Time=get(timeVar))][Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
+                                           MarkovStatus=get(currStatusVar), Time=get(timeVar))][MarkovStatus==0, list(EventRate = sum(Target, na.rm=T)/.N),
               by=list(Time)][Time >= def_StartDte & Time <= maxDate,][order(Time), EventRate]
     
     
     # - Subsampled + resampled validation set
     eventRate_valid <- datCredit_valid[, list(Target=get(targetVar), 
-                                              Status=get(currStatusVar), Time=get(timeVar))][Status==0, list(EventRate = sum(Target, na.rm=T)/.N),
+                                              MarkovStatus=get(currStatusVar), Time=get(timeVar))][MarkovStatus==0, list(EventRate = sum(Target, na.rm=T)/.N),
                by=list(Time)][Time >= def_StartDte & Time <= maxDate,][order(Time), EventRate]
     
     
