@@ -1,7 +1,7 @@
 # ================================== DATA PREPARATION ===================================
 # Perform various data checks, conduct data cleaning, apply exclusions, treat missingness
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha
 # ---------------------------------------------------------------------------------------
 # DESCRIPTION:

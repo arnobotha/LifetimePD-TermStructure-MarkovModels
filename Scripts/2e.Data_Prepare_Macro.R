@@ -2,7 +2,7 @@
 # Use the macroeconomic dataset, performing various data preparation steps on it, and
 # create features using the macroeconomic variables that can be used in model development
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha, Esmerelda Oberholzer
 
 # DESCRIPTION:

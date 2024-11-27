@@ -1,7 +1,7 @@
 # ===================================== DATA IMPORT =====================================
 # Import credit dataset (SAS) into R, containing loan performance data (longitudinal)
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller
 # ---------------------------------------------------------------------------------------
 # -- Script dependencies:

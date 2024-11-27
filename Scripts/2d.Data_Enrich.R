@@ -2,7 +2,7 @@
 # Engineer more advanced fields related to performance and default spells, followed by
 # calculating the realised LGD from resolved default spells. TruEnd-procedure applied.
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha
 # ---------------------------------------------------------------------------------------
 # -- Script dependencies:

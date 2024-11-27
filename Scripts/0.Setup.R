@@ -1,7 +1,7 @@
 # =================================== SETUP =============================================
 # Setting up R environment, parameters, and function definitions
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
 
 # DESCRIPTION: 

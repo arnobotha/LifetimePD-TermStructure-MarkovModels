@@ -1,7 +1,7 @@
 # ================================== DATA PREPARATION ===================================
 # Apply various advanced data treatments, in preparation for applying the TruEnd-procedure
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha
 # ---------------------------------------------------------------------------------------
 # DESCRIPTION:

@@ -2,7 +2,7 @@
 # Applying exclusions, data fusion between credit and macroeconomic datasets, followed by
 # engineering some basic features that must precede any (non-clustered) subsampling
 # ---------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
 
 # DESCRIPTION:
@@ -140,21 +140,27 @@ datCredit_real <- subset(datCredit_real, select = -c(ExclusionID))
 # - Remove fields that will not likely be used in the eventual analysis/modelling of default risk, purely to save memory
 names(datCredit_real)
 datCredit_real <- subset(datCredit_real, 
-                         select = -c(Age, #PerfSpell_Key, New_Ind, Max_Counter, Date_Origination, Principal,
-                                     AccountStatus, #Instalment, Arrears, 
-                                     DelinqState_g0, #DefaultStatus1, DefSpell_Num, TimeInDefSpell,
+                         select = -c(Age, AccountStatus, DelinqState_g0, 
+                                     # The following fields are kept simply for diagnostic purposes (script 2g)
+                                     #DefaultStatus1, DefSpell_Num, TimeInDefSpell, TreatmentID, 
+                                     # The following fields are related to default spells (LGD-modelling)
                                      DefSpell_LeftTrunc, DefSpell_Event, DefSpell_Censored,
-                                     DefSpellResol_TimeEnd, #DefSpell_Age, DefSpellResol_Type_Hist,
-                                     DefSpell_LastStart, ReceiptPV, LossRate_Real, #HasLeftTruncPerfSpell, 
-                                     PerfSpell_LeftTrunc, PerfSpell_Event, PerfSpell_Censored,
-                                     PerfSpell_TimeEnd, #PerfSpellResol_Type_Hist,
-                                     Account_Censored, #Event_Time, Event_Type, HasLeftTruncDefSpell,
-                                     HasTrailingZeroBalances, ZeroBal_Start, NCA_CODE, STAT_CDE, LN_TPE,
-                                     #DefSpell_Key, DefSpell_Counter, PerfSpell_Counter,
-                                     HasWOff, WriteOff_Amt, HasSettle, EarlySettle_Amt, # HasFurtherLoan, HasRedraw,
-                                     HasClosure, CLS_STAMP, Curing_Ind, BOND_IND, Undrawn_Amt, # TreatmentID,
-                                     slc_past_due_amt, #WOff_Ind, EarlySettle_Ind, #PerfSpell_Num, PerfSpell_Age,
-                                     FurtherLoan_Amt, FurtherLoan_Ind, Redraw_Ind, Redrawn_Amt, HasRepaid)); gc()
+                                     DefSpellResol_TimeEnd, DefSpell_Age, DefSpellResol_Type_Hist,
+                                     DefSpell_LastStart, DefSpell_Key, DefSpell_Counter, 
+                                     # The following fields are intermediary ones and/or are (should) never used analytically 
+                                     # or predictively within the current project's context
+                                     PerfSpell_TimeEnd, Account_Censored, ZeroBal_Start, NCA_CODE, STAT_CDE, LN_TPE,
+                                     CLS_STAMP, WOff_Ind, WriteOff_Amt, EarlySettle_Ind, EarlySettle_Amt, 
+                                     Curing_Ind, BOND_IND, Undrawn_Amt,
+                                     # The following are needless account-level flags
+                                     HasRepaid, HasLeftTruncDefSpell, HasLeftTruncPerfSpell, HasTrailingZeroBalances,
+                                     HasWOff, HasClosure, HasSettle, HasFurtherLoan, HasRedraw,
+                                     # The following do not typically add any predictive value, whilst their creation in the 
+                                     # underlying SAS-based DataFeed is in itself suspicious
+                                     FurtherLoan_Amt, FurtherLoan_Ind, Redraw_Ind, Redrawn_Amt, Repaid_Ind,
+                                     # The following are suspicious fields or originate from other suspicious fields
+                                     ReceiptPV, LossRate_Real, slc_past_due_amt
+                         )); gc()
 
 # - Merge on Date by performing a left-join
 datCredit_real <- merge(datCredit_real, datMV, by="Date", all.x=T); gc()
