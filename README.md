@@ -1,4 +1,5 @@
 # LifetimePD-TermStructure-MarkovModels
+<Abstract goes here>
 
 ## Structure
 This R-codebase can be run sequentially using the file numbering itself as a structure. Delinquency measures are algorithmically defined in **DelinqM.R** as data-driven functions, which may be valuable to the practitioner outside of the study's current scope. Similarly, the TruEnd-procedure from [Botha2024](https://github.com/arnobotha/TruEnd-Procedure) and its set of functions are impliemented in the **TruEnd.R** script.
