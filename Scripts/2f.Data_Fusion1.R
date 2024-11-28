@@ -84,6 +84,9 @@ if (diag.real12a > 0) {
                         "Impact_Account" = diag.real12a, "Impact_Dataset" = diag.real12a_rec,
                         "Impact_records" = diag.real12a_abs)
   if (exists('datExclusions')) datExclusions <- rbind(datExclusions, datExcl) else datExclusions <- datExcl
+  
+  # - Cleanup
+  rm(LoanIDs)
 }
 
 # - Cleanup
