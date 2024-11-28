@@ -86,7 +86,7 @@ if (diag.real12a > 0) {
   if (exists('datExclusions')) datExclusions <- rbind(datExclusions, datExcl) else datExclusions <- datExcl
   
   # - Cleanup
-  rm(LoanIDs)
+  rm(LoanIDs, datExcl)
 }
 
 # - Cleanup
