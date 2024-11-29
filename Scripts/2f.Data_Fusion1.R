@@ -352,7 +352,7 @@ datCredit_real[,MarkovStatus := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "
                                     WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
 
 # - Lead the [Status] by 1 period, thereby observing the future 1-period state of each loan
-datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill="NA"),by=LoanID]
+datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill=NA),by=LoanID]
 
 
 
