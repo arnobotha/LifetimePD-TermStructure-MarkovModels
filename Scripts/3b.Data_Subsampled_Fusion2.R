@@ -55,7 +55,7 @@ datCredit_real[,Target_FromD:=relevel(factor(MarkovStatus_Future),ref="Def")]
 
 
 
-# ------ 2. Subsampling scheme with 2-way stratified random sampling
+# ------ 2. Clustered subsampling scheme with 2-way stratified random sampling
 # - Set seed for sampling
 set.seed(6,kind="Mersenne-Twister")
 
