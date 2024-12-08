@@ -2,7 +2,7 @@
 # Subsampling and resampling data prior to fusing the input space towards PD-modelling
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Classifier Diagnostics
-# SCRIPT AUTHOR(S): Dr Arno Botha, Esmerelda Oberholzer, Marcel Muller, Roland Breedt
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION:
 # This script performs the following high-level tasks:
@@ -31,64 +31,69 @@
 # ------------------------------------------------------------------------------------------------------
 
 
+### AB [20241-12-07]: Busy aligning with LifetimePD-TermStructure_RecurrentEvents codebase, but not yet run/tested
 
 
-# ------ 1.1 Preliminaries
+# ------ 1. Preliminaries
 ptm <- proc.time() # for runtime calculations (ignore)
 
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
 if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd-Enriched"), tempPath)
 
-# ------ 1. General Markov Data prep
-# --- Creating Indicator variables that do not overlap
-datCredit_real[,Mark_Perf_Ind:=ifelse(MarkovStatus_Future=="Perf",1,0)]
-datCredit_real[,Mark_Def_Ind:=ifelse(MarkovStatus_Future=="Def",1,0)]
-datCredit_real[,Mark_Set_Ind:=ifelse(MarkovStatus_Future=="Set",1,0)]
-datCredit_real[,Mark_WO_Ind:=ifelse(MarkovStatus_Future=="W_Off",1,0)]
-
-# - Set Reference Category for multinomial model (Performing for "From Performing" transitions and Default for "From Default" transitions)
-datCredit_real[,Target_FromP:=relevel(factor(MarkovStatus_Future),ref="Perf")]
-datCredit_real[,Target_FromD:=relevel(factor(MarkovStatus_Future),ref="Def")]
+# - Resampling, stratification, and other general parameters
+smp_frac<-0.7
+smp_size <- 135000
+# Implied sampling fraction for the downsampling step
+smp_perc <- smp_size/datCredit_real[!duplicated(LoanID),.N] 
+cat("Implied sampling fraction = ", round(smp_perc*100,3),"% of loan accounts","\n",sep="")
+### RESULTS: Implied sampling fraction = 20.746%
 
 
+# - Create indicator variables that do not overlap | Markov modelling preparation
+datCredit_real[,Mark_Perf_Ind := ifelse(MarkovStatus_Future=="Perf",1,0)]
+datCredit_real[,Mark_Def_Ind := ifelse(MarkovStatus_Future=="Def",1,0)]
+datCredit_real[,Mark_Set_Ind := ifelse(MarkovStatus_Future=="Set",1,0)]
+datCredit_real[,Mark_WO_Ind := ifelse(MarkovStatus_Future=="W_Off",1,0)]
+
+# - Set Reference Category for multinomial model | Beta regression preparation
+# (Performing for "From Performing" transitions and Default for "From Default" transitions)
+datCredit_real[,Target_FromP := relevel(factor(MarkovStatus_Future),ref="Perf")]
+datCredit_real[,Target_FromD := relevel(factor(MarkovStatus_Future),ref="Def")]
 
 
 
-# ------ 2. Clustered subsampling scheme with 2-way stratified random sampling
+
+
+# ------ 2. Clustered subsampling scheme with 1-way stratified random sampling (Date_Origination)
 # - Set seed for sampling
 set.seed(6,kind="Mersenne-Twister")
 
-# --- Choose subset size (nr of borrowers)
-n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
-nr<-135000
-prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
-cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
-### RESULTS: Implied sampling fraction = 20.746%
+# - Training Key population
+# Get unique subject IDs or keys from the full dataset
+datKeys <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
+# Use stratified random sampling to select at random some keys from which the training set will be populated 
+datKeys_sampled <- datKeys %>% group_by(Date_Origination) %>% slice_sample(prop=smp_perc)
 
-# - Obtain first observations of all LoanIDs
-dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
-
-# - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=prop_sub)
-
-# - Create the subset dataset
-datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
+# - Obtain the associated loan records in creating the subsampled dataset
+datCredit_smp <- copy(datCredit_real %>% subset(LoanID %in% datKeys_sampled$LoanID))
 cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
 ### RESULTS: Nr of observations in Subset = 9 588 659
 
 # - Save to disk (zip) for quick disk-based retrieval later
-pack.ffdf(paste0(genPath, "creditdata_final4b"), datCredit_smp)
+pack.ffdf(paste0(genPath, "creditdata_final_smp1a"), datCredit_smp)
+pack.ffdf(paste0(genPath,"creditdata_final_sampledKeys"), datKeys_sampled)
+
+# - Cleanup
+rm(datKeys, datKeys_sampled, datCredit_real); gc()
 
 
 
 
 
 # ------ 3. Fuse the input space with the subsampled prepared dataset
-# --- Load in main dataset (subsampled)
-if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4b"), tempPath)
-
-# - Confirm if the input space data is loaded into memory
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final_smp1a"), tempPath)
 if (!exists('datInput.raw')) unpack.ffdf(paste0(genPath,"creditdata_input1"), tempPath)
 
 # - Find intersection between fields in input space and those perhaps already in the main credit dataset
@@ -655,20 +660,21 @@ pack.ffdf(paste0(genPath, "creditdata_smp"), datCredit_smp); gc()
 
 
 
-# --- 10. Apply basic cross-validation resampling scheme with 2-way stratified sampling
+
+# --- 10. Apply basic cross-validation clustered resampling scheme with 1-way stratified sampling
 
 # - Loading in the raw dataset
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_smp"), tempPath)
 
 # - Set seed and training set proportion
 set.seed(1,kind="Mersenne-Twister")
-train_prop<-0.7
+
 
 # - Obtain first observations of all LoanIDs
 dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
 # - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=train_prop)
+dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=smp_frac)
 
 # - Create the subset dataset
 datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
@@ -688,7 +694,7 @@ pack.ffdf(paste0(genPath, "creditdata_valid"), datCredit_valid); gc()
 
 # --- Clean up
 rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
-   stratifiers, smp_perc, smp_size, targetVar, timeVar, train_prop,
+   stratifiers, smp_perc, smp_size, targetVar, timeVar, smp_frac,
    datMV_Check1, datMV_Check2, list_merge_variables, results_missingness,
    ColNames, lags, datCredit_smp)
 
