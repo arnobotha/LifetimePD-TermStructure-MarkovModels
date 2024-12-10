@@ -1,12 +1,12 @@
 # ================================== TruEnd-functions ===================================
-# Function definitions used in the TruEnd-procedure itself
+# Function definitions used within the TruEnd-procedure itself
 # ---------------------------------------------------------------------------------------
 # SCRIPT AUTHOR(S): Dr Arno Botha
-# VERSION: 1.2 (Feb-2024)
+# VERSION: 1.3 (Nov-2024)
 # DESCRIPTION: 
 # See Botha, A., Verster, T., Bester, R. (2024). The TruEnd-procedure: Treating trailing
-#   zero-valued balances in credit data (forthcoming). Overleaf
-#   https://www.overleaf.com/read/dptmgxnvqjjq
+#   zero-valued balances in credit data (forthcoming). ResearchGate
+#   https://www.researchgate.net/publication/380214432_The_TruEnd-procedure_Treating_trailing_zero-valued_balances_in_credit_data
 # =======================================================================================
 
 
@@ -194,6 +194,9 @@ TruEnd_outer <- function(matControl, thres=0, controlVar, matBalance, vMaturity,
     }
   })
   
+  # - Summarise TZB-legnths more concisely for reporting purposes
+  vTZB_len_actual <- vTZB_len[vT_z>=0]
+  
   # - Find balance at the "true end" positions, if found
   vTruEnd_bal <- sapply(1:nAcc, function(i, t){
     return(matBalance[t[i],i])}, t=vTruEnd_positions)
@@ -238,11 +241,15 @@ TruEnd_outer <- function(matControl, thres=0, controlVar, matBalance, vMaturity,
   
   # --- 4. Concatenate results
   datResults.interim <- data.table(ResultSet = logName, Control = controlVar, Threshold = thres, Control2 = controlVar2, Threshold2 = thres2,
-                                   Accs_Count = nAcc,
+                                   Accs_Count = nAcc, 
+                                   Accs_Count_M1 = length(vM1[!is.na(vM1)]),
+                                   Accs_Count_M2 = length(vM2[!is.na(vM2)]),
+                                   Accs_Count_TruEndPoints = length(vTruEnd_points[!is.na(vTruEnd_points)]),
+                                   Accs_Count_TZBLengths = length(vTZB_len_actual[!is.na(vTZB_len_actual)]),
                                    FalseEnd_mean = mean(vMaturity, na.rm=T), FalseEnd_sd = sd(vMaturity, na.rm=T),
                                    TruEnd_mean = mean(vTruEnd_points, na.rm=T), TruEnd_sd = sd(vTruEnd_points, na.rm=T),
                                    TruEndPos_mean = mean(vTruEnd_positions, na.rm=T), TruEndPos_sd = sd(vTruEnd_positions, na.rm=T),
-                                   TZB_Length_mean = mean(vTZB_len[vT_z>=0], na.rm=T), TZB_Length_sd = sd(vTZB_len[vT_z>=0], na.rm=T),
+                                   TZB_Length_mean = mean(vTZB_len_actual, na.rm=T), TZB_Length_sd = sd(vTZB_len_actual, na.rm=T),
                                    TruBal_mean = mean(vTruEnd_bal, na.rm=T), TruBal_sd = sd(vTruEnd_bal, na.rm=T),
                                    M1_mean = mean(vM1, na.rm=T), M1_sd = sd(vM1, na.rm=T),
                                    M2_mean = mean(vM2, na.rm=T), M2_sd = sd(vM2, na.rm=T),
