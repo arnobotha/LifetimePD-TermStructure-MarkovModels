@@ -1277,19 +1277,40 @@ KS_discimination <- function(class0, class1, alpha=0.05) {
 # - Dataset
 ### OUTPUTS: TPM
 
-Markov_TPM<-function(DataSetMC){
-  TPM<-rbind(cbind(sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Perf"),
-                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Def"),
-                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="Set"),
-                   sum(DataSetMC$Status=="Perf" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Perf" & DataSetMC$To !="NA"),
-             cbind(sum(DataSetMC$Status=="Def" & DataSetMC$To=="Perf"),
-                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="Def"),
-                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="Set"),
-                   sum(DataSetMC$Status=="Def" & DataSetMC$To=="W_Off"))/sum(DataSetMC$Status=="Def" & DataSetMC$To !="NA"),
-             c(0,0,1,0),c(0,0,0,1))
+Markov_TPM<-function(DataSetMC, StateSpace, absorbing){
   
-  rownames(TPM)<-c("Perf","Def","Set","W_O")
-  colnames(TPM)<-c("Perf","Def","Set","W_0")
-  return(TPM)
+  # - Temporarily format data
+  matMarkovState <- as.matrix(pivot_wider(data=DataSetMC[order(LoanID),list(LoanID,Counter,MarkovStatus)], 
+                                          id_cols=Counter:Counter, names_from=LoanID, values_from=MarkovStatus))[,-1]; gc()
+  
+  # - Create transition matrix
+  p_TransMat <- matrix(nrow=NROW(StateSpace), ncol=NROW(StateSpace), 0)
+  colnames(p_TransMat) <- StateSpace; rownames(p_TransMat) <- StateSpace
+  
+  # - Estimate transition matrix
+  for (t in 1:(NROW(matMarkovState)-1)) {
+    for (state.i in 1:NROW(StateSpace)) {
+      for (state.j in 1:NROW(StateSpace)) {
+        p_TransMat[state.i, state.j] <- p_TransMat[state.i, state.j] + NROW(which(matMarkovState[t,] == StateSpace[state.i] & matMarkovState[t+1,] ==StateSpace[state.j]))   
+      }
+    }
+  }
+  
+  # - Obtain the MLE estimate of the TPM
+  for (state.i in 1:NROW(StateSpace)) p_TransMat[state.i, ] <- p_TransMat[state.i, ] / sum(p_TransMat[state.i, ])
+  
+  # - Enforce absorbing probabilities (simply because there won't be accounts moving out of those states by design)
+  position_absorbing<-which(absorbing)
+  for(j in 1:NROW(StateSpace)){
+    if(j %in% position_absorbing){
+      p_TransMat[j,j]<-1
+      p_TransMat[j,(1:NROW(StateSpace))[-j]] <- 0
+    }
+  }
+  
+  # - Return the TPM
+  return(round(p_TransMat*100,5))
 }
+
+# Markov_TPM(datCredit_real,c("Perf","Def","W_Off","Set"),c(FALSE,FALSE,TRUE,TRUE))
 

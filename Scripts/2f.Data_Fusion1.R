@@ -358,14 +358,76 @@ datCredit_real[,MarkovStatus := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "
 # - Lead the [Status] by 1 period, thereby observing the future 1-period state of each loan
 datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill=NA),by=LoanID]
 
+# - Order data according to ascending LoanID and Date in order to create certain features
+setorder(datCredit_real, LoanID, Date)
 
+# - State Spell Number (state level counter)
+datCredit_real[, StateSpell_Num := {
+  # Initialize a vector to store the results
+  state_counts <- numeric(.N)
+  
+  # Initialize a list to track the counters for each unique state visited
+  unique_states <- unique(MarkovStatus)
+  state_counters <- setNames(as.list(rep(0, length(unique_states))), unique_states)
+  
+  # Iterate over the rows of each LoanID
+  for (i in 1:.N) {
+    if(i==1){
+      # Initial state
+      current_state<-MarkovStatus[i]
+      state_counters[[current_state]]<-1
+    } else {
+      # Get the previous and current state
+      prev_state<-MarkovStatus[i-1]
+      current_state<-MarkovStatus[i]
+      
+      # If the state changed, increment the state's counter
+      if (current_state != prev_state) {
+        state_counters[[current_state]] <- state_counters[[current_state]] + 1
+      }}
+    
+    # Assign the state counter value to the current row
+    state_counts[i] <- state_counters[[current_state]]
+  }
+  state_counts
+}, by = LoanID]
 
+# - Time in State Spell
+datCredit_real[,TimeInStateSpell:=sequence(.N),by = list(LoanID, MarkovStatus)]
+
+# - State Spell Age
+datCredit_real[,StateSpell_Age:=.N,by = list(LoanID, StateSpell_Num, MarkovStatus)]
+
+# - Number of current spell (account level spell counter)
+datCredit_real[,Spell_Counter:=rleid(MarkovStatus),by = list(LoanID)]
+
+# - Lagged variant off spell age
+datCredit_real[, Prev_Spell_Age := {
+  prev_age<-numeric(.N)
+  for(i in 1:.N){
+    if(Spell_Counter[i]==1){
+      prev_age[i]<-0
+    }else{
+      if(Spell_Counter[i]==Spell_Counter[i-1]){
+        prev_age[i]<-prev_age[i-1]
+      }else{prev_age[i]<-StateSpell_Age[i-1]}
+    }
+  }
+  prev_age   
+}, by = LoanID]
+
+# [Sanity Check] Check for any missingness in the markov variables
+cat(anyNA(datCredit_real[,list(Date,LoanID,MarkovStatus,StateSpell_Num,Spell_Counter,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell)]) %?% 
+      "WARNING: Missingness detected in the engineered variables. \n" %:%
+      "SAFE: No Missingness detected in the engineered variables. \n")
+
+#CHECK <- datCredit_real[1:300,list(Date,LoanID,MarkovStatus,StateSpell_Num,Spell_Counter,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell)]
 
 # ------ 6. General cleanup & checks
 
 # - remove intermediary and redundant fields
 datCredit_real <- subset(datCredit_real, 
-                         select = -c(WOff_Ind, EarlySettle_Ind, Repaid_Ind, g0_Delinq_Shift)); gc()
+                         select = -c(WOff_Ind, EarlySettle_Ind, Repaid_Ind, g0_Delinq_Shift, StateSpell_Age)); gc()
 
 # - Clean-up
 rm(list_merge_variables, results_missingness, port.aggr, dat_NewLoans_Aggr)
