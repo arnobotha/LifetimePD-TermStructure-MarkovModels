@@ -1277,7 +1277,7 @@ KS_discimination <- function(class0, class1, alpha=0.05) {
 # - Dataset
 ### OUTPUTS: TPM
 
-Markov_TPM<-function(DataSetMC, StateSpace, absorbing){
+Markov_TPM<-function(DataSetMC, StateSpace, Absorbing){
   
   # - Temporarily format data
   matMarkovState <- as.matrix(pivot_wider(data=DataSetMC[order(LoanID),list(LoanID,Counter,MarkovStatus)], 
@@ -1289,9 +1289,10 @@ Markov_TPM<-function(DataSetMC, StateSpace, absorbing){
   
   # - Estimate transition matrix
   for (t in 1:(NROW(matMarkovState)-1)) {
-    for (state.i in 1:NROW(StateSpace)) {
-      for (state.j in 1:NROW(StateSpace)) {
-        p_TransMat[state.i, state.j] <- p_TransMat[state.i, state.j] + NROW(which(matMarkovState[t,] == StateSpace[state.i] & matMarkovState[t+1,] ==StateSpace[state.j]))   
+    for (state.i in 1:NROW(StateSpace)) { # From state
+      for (state.j in 1:NROW(StateSpace)) { # To state
+        p_TransMat[state.i, state.j] <- p_TransMat[state.i, state.j] + # Obtain transition counts
+          NROW(which(matMarkovState[t,] == StateSpace[state.i] & matMarkovState[t+1,] ==StateSpace[state.j]))   
       }
     }
   }
@@ -1300,7 +1301,7 @@ Markov_TPM<-function(DataSetMC, StateSpace, absorbing){
   for (state.i in 1:NROW(StateSpace)) p_TransMat[state.i, ] <- p_TransMat[state.i, ] / sum(p_TransMat[state.i, ])
   
   # - Enforce absorbing probabilities (simply because there won't be accounts moving out of those states by design)
-  position_absorbing<-which(absorbing)
+  position_absorbing<-which(Absorbing)
   for(j in 1:NROW(StateSpace)){
     if(j %in% position_absorbing){
       p_TransMat[j,j]<-1
@@ -1312,5 +1313,56 @@ Markov_TPM<-function(DataSetMC, StateSpace, absorbing){
   return(round(p_TransMat*100,5))
 }
 
-# Markov_TPM(datCredit_real,c("Perf","Def","W_Off","Set"),c(FALSE,FALSE,TRUE,TRUE))
+# Markov_TPM(DataSetMC=datCredit_real,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
+
+
+# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
+# ...
+### INPUTS: 
+# - Dataset
+### OUTPUTS: TPM
+
+Calc_StateNum<-function(vMarkovStatus){
+  # Initialize a vector to store the results
+  state_counts <- rep(0,length(vMarkovStatus))
+  
+  # Initialize a list to track the counters for each unique state visited
+  unique_states <- unique(vMarkovStatus)
+  state_counters <- setNames(as.list(rep(0, length(unique_states))), unique_states)
+  
+  # Iterate over the rows of each LoanID
+  for (i in 1:length(vMarkovStatus)) { # length of vMarkovStatus
+    if(i==1){
+      # Initial state
+      state_counters[[vMarkovStatus[i]]]<-1
+    } else {
+      # If the state changed, increment the state's counter
+      if (vMarkovStatus[i] != vMarkovStatus[i-1]) {
+        state_counters[[vMarkovStatus[i]]] <- state_counters[[vMarkovStatus[i]]] + 1
+      }}
+    
+    # Assign the state counter value to the current row
+    state_counts[i] <- state_counters[[vMarkovStatus[i]]]
+  }
+  return(state_counts)
+}
+
+# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
+# ...
+### INPUTS: 
+# - Dataset
+### OUTPUTS: TPM
+Lagged_Spell_Age<-function(vSpell_Counter,vStateSpell_Age){
+  prev_age<-rep(0,length(vSpell_Counter)) # Initialise return vector
+  for(i in 1:length(vSpell_Counter)){ # Iterate over given vectors
+    if(vSpell_Counter[i]==1){
+      prev_age[i]<-0
+    }else{
+      if(vSpell_Counter[i]==vSpell_Counter[i-1]){
+        prev_age[i]<-prev_age[i-1]
+      }else{prev_age[i]<-vStateSpell_Age[i-1]}
+    }
+  }
+  return(prev_age)  
+}
 

@@ -362,72 +362,46 @@ datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill=N
 setorder(datCredit_real, LoanID, Date)
 
 # - State Spell Number (state level counter)
-datCredit_real[, StateSpell_Num := {
-  # Initialize a vector to store the results
-  state_counts <- numeric(.N)
-  
-  # Initialize a list to track the counters for each unique state visited
-  unique_states <- unique(MarkovStatus)
-  state_counters <- setNames(as.list(rep(0, length(unique_states))), unique_states)
-  
-  # Iterate over the rows of each LoanID
-  for (i in 1:.N) {
-    if(i==1){
-      # Initial state
-      current_state<-MarkovStatus[i]
-      state_counters[[current_state]]<-1
-    } else {
-      # Get the previous and current state
-      prev_state<-MarkovStatus[i-1]
-      current_state<-MarkovStatus[i]
-      
-      # If the state changed, increment the state's counter
-      if (current_state != prev_state) {
-        state_counters[[current_state]] <- state_counters[[current_state]] + 1
-      }}
-    
-    # Assign the state counter value to the current row
-    state_counts[i] <- state_counters[[current_state]]
-  }
-  state_counts
-}, by = LoanID]
-
-# - Time in State Spell
-datCredit_real[,TimeInStateSpell:=sequence(.N),by = list(LoanID, MarkovStatus)]
-
-# - State Spell Age
-datCredit_real[,StateSpell_Age:=.N,by = list(LoanID, StateSpell_Num, MarkovStatus)]
+datCredit_real[, StateSpell_Num := Calc_StateNum(vMarkovStatus=MarkovStatus), by = LoanID]
 
 # - Number of current spell (account level spell counter)
-datCredit_real[,Spell_Counter:=rleid(MarkovStatus),by = list(LoanID)]
+datCredit_real[,StateSpell_Num_Total:=rleid(MarkovStatus),by = list(LoanID)]
+
+# - State Spell Age
+datCredit_real[,StateSpell_Age:=.N,by = list(LoanID,StateSpell_Num_Total)]
 
 # - Lagged variant off spell age
-datCredit_real[, Prev_Spell_Age := {
-  prev_age<-numeric(.N)
-  for(i in 1:.N){
-    if(Spell_Counter[i]==1){
-      prev_age[i]<-0
-    }else{
-      if(Spell_Counter[i]==Spell_Counter[i-1]){
-        prev_age[i]<-prev_age[i-1]
-      }else{prev_age[i]<-StateSpell_Age[i-1]}
-    }
-  }
-  prev_age   
-}, by = LoanID]
+datCredit_real[, Prev_Spell_Age := Lagged_Spell_Age(vSpell_Counter=StateSpell_Num_Total,
+                                                    vStateSpell_Age=StateSpell_Age), by = LoanID]
+
+# - Time in State Spell
+datCredit_real[,TimeInStateSpell:=sequence(.N),by = list(LoanID, StateSpell_Num_Total)]
+
+# - Truncated State Spell
+datCredit_real[,StateSpell_Trunc:=ifelse(StateSpell_Num_Total==1&MarkovStatus!="Perf",1,0),
+               by=list(LoanID,StateSpell_Num_Total)]
 
 # [Sanity Check] Check for any missingness in the markov variables
-cat(anyNA(datCredit_real[,list(Date,LoanID,MarkovStatus,StateSpell_Num,Spell_Counter,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell)]) %?% 
+cat(anyNA(datCredit_real[,list(Date,LoanID,MarkovStatus,StateSpell_Num,StateSpell_Num_Total,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell)]) %?% 
       "WARNING: Missingness detected in the engineered variables. \n" %:%
       "SAFE: No Missingness detected in the engineered variables. \n")
 
-#CHECK <- datCredit_real[1:300,list(Date,LoanID,MarkovStatus,StateSpell_Num,Spell_Counter,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell)]
+#CHECK <- subset(datCredit_real,LoanID %in% unique(datCredit_real[PerfSpell_Num>=3,LoanID])[1], 
+#                select=c(Date,LoanID,MarkovStatus,StateSpell_Trunc,StateSpell_Num,StateSpell_Num_Total,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell))
+
+#CHECK2 <- subset(datCredit_real,LoanID %in% unique(datCredit_real[DefSpell_Num>=2 & MarkovStatus=="W_Off",LoanID])[1], 
+#                select=c(Date,LoanID,MarkovStatus,StateSpell_Trunc,StateSpell_Num,StateSpell_Num_Total,StateSpell_Age,Prev_Spell_Age,TimeInStateSpell))
+
+# [Sanity Check] Check for any missingness in the markov variables
+cat(any((datCredit_real[, .SD[.N], by = list(StateSpell_Num_Total,LoanID), .SDcols = 'StateSpell_Age'][,3]==datCredit_real[, .SD[.N], by = list(StateSpell_Num_Total,LoanID), .SDcols = 'TimeInStateSpell'][,3])==FALSE) %?% 
+      "WARNING: Last value of state spell age is not equal to time in state spell. \n" %:%
+      "SAFE: Last value of state spell age is equal to time in state spell. \n")
+
 
 # ------ 6. General cleanup & checks
-
-# - remove intermediary and redundant fields
+# - Remove intermediary and redundant fields
 datCredit_real <- subset(datCredit_real, 
-                         select = -c(WOff_Ind, EarlySettle_Ind, Repaid_Ind, g0_Delinq_Shift, StateSpell_Age)); gc()
+                         select = -c(WOff_Ind, EarlySettle_Ind, Repaid_Ind, g0_Delinq_Shift)); gc()
 
 # - Clean-up
 rm(list_merge_variables, results_missingness, port.aggr, dat_NewLoans_Aggr)
