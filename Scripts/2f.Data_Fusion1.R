@@ -352,11 +352,11 @@ cat( (length(which(results_missingness > 0)) == 0) %?% "SAFE: No missingness, fu
 # ------ 5. Enforce a given state space for Markov-type modelling
 # - Create [Status] as the State in which the loan resides at any given point of its history
 # Performing = "Perf"; Default = "Def"; Settlement = "Set"; Write-Off = "W_Off"
-datCredit_real[,MarkovStatus := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
+datCredit_real[, MarkovStatus := case_when(EarlySettle_Ind==1 | Repaid_Ind==1 ~ "Set",
                                     WOff_Ind==1 ~ "W_Off",DefaultStatus1==1 ~ "Def",.default = "Perf")]
 
 # - Lead the [Status] by 1 period, thereby observing the future 1-period state of each loan
-datCredit_real[,MarkovStatus_Future:=shift(x=MarkovStatus,n=1,type="lead",fill=NA),by=LoanID]
+datCredit_real[, MarkovStatus_Future := shift(x=MarkovStatus,n=1,type="lead",fill=NA), by=LoanID]
 
 # - Order data according to ascending LoanID and Date in order to create certain features
 setorder(datCredit_real, LoanID, Date)
@@ -365,20 +365,20 @@ setorder(datCredit_real, LoanID, Date)
 datCredit_real[, StateSpell_Num := Calc_StateNum(vMarkovStatus=MarkovStatus), by = LoanID]
 
 # - Number of current spell (account level spell counter)
-datCredit_real[,StateSpell_Num_Total:=rleid(MarkovStatus),by = list(LoanID)]
+datCredit_real[, StateSpell_Num_Total := rleid(MarkovStatus), by = list(LoanID)]
 
 # - State Spell Age
-datCredit_real[,StateSpell_Age:=.N,by = list(LoanID,StateSpell_Num_Total)]
+datCredit_real[, StateSpell_Age := .N, by = list(LoanID,StateSpell_Num_Total)]
 
 # - Lagged variant off spell age
 datCredit_real[, Prev_Spell_Age := Lagged_Spell_Age(vSpell_Counter=StateSpell_Num_Total,
                                                     vStateSpell_Age=StateSpell_Age), by = LoanID]
 
 # - Time in State Spell
-datCredit_real[,TimeInStateSpell:=sequence(.N),by = list(LoanID, StateSpell_Num_Total)]
+datCredit_real[, TimeInStateSpell := sequence(.N), by = list(LoanID, StateSpell_Num_Total)]
 
 # - Truncated State Spell
-datCredit_real[,StateSpell_Trunc:=ifelse(StateSpell_Num_Total==1&MarkovStatus!="Perf",1,0),
+datCredit_real[,StateSpell_Trunc := ifelse(StateSpell_Num_Total==1&MarkovStatus!="Perf",1,0),
                by=list(LoanID,StateSpell_Num_Total)]
 
 # [Sanity Check] Check for any missingness in the markov variables
@@ -396,6 +396,9 @@ cat(anyNA(datCredit_real[,list(Date,LoanID,MarkovStatus,StateSpell_Num,StateSpel
 cat(any((datCredit_real[, .SD[.N], by = list(StateSpell_Num_Total,LoanID), .SDcols = 'StateSpell_Age'][,3]==datCredit_real[, .SD[.N], by = list(StateSpell_Num_Total,LoanID), .SDcols = 'TimeInStateSpell'][,3])==FALSE) %?% 
       "WARNING: Last value of state spell age is not equal to time in state spell. \n" %:%
       "SAFE: Last value of state spell age is equal to time in state spell. \n")
+
+
+
 
 
 # ------ 6. General cleanup & checks

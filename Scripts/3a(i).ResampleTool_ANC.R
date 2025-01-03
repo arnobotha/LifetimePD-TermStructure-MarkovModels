@@ -2,7 +2,7 @@
 # A tool for investigating subsampling & resampling parameters interactively towards obtaining a 
 # training and validation dataset that is representative to the population.
 # ------------------------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default survival modelling
 # SCRIPT AUTHOR(S): Dr Arno Botha, Roland Breedt
 
 # DESCRIPTION:

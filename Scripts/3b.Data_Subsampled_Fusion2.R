@@ -1,7 +1,7 @@
 # ========================== SUBSAMPLED RESAMPLING & DATA FUSION FOR PD MODELS =========================
 # Subsampling and resampling data prior to fusing the input space towards PD-modelling
 # ------------------------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default survival modelling
 # SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION:
@@ -31,7 +31,7 @@
 # ------------------------------------------------------------------------------------------------------
 
 
-### AB [20241-12-07]: Busy aligning with LifetimePD-TermStructure_RecurrentEvents codebase, but not yet run/tested
+
 
 
 # ------ 1. Preliminaries
@@ -40,26 +40,15 @@ ptm <- proc.time() # for runtime calculations (ignore)
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
 if (!exists('datExclusions')) unpack.ffdf(paste0(genObjPath,"Exclusions-TruEnd-Enriched"), tempPath)
+doDescribe <- F # whether to run describe as part of production run or not
 
 # - Resampling, stratification, and other general parameters
-smp_frac<-0.7
-smp_size <- 135000
+smp_size <- 200000 # Number of keys/loans during the subsampling step
 # Implied sampling fraction for the downsampling step
-smp_perc <- smp_size/datCredit_real[!duplicated(LoanID),.N] 
+smp_perc <- smp_size/datCredit_real[Counter==1, .N] 
 cat("Implied sampling fraction = ", round(smp_perc*100,3),"% of loan accounts","\n",sep="")
 ### RESULTS: Implied sampling fraction = 20.746%
-
-
-# - Create indicator variables that do not overlap | Markov modelling preparation
-datCredit_real[,Mark_Perf_Ind := ifelse(MarkovStatus_Future=="Perf",1,0)]
-datCredit_real[,Mark_Def_Ind := ifelse(MarkovStatus_Future=="Def",1,0)]
-datCredit_real[,Mark_Set_Ind := ifelse(MarkovStatus_Future=="Set",1,0)]
-datCredit_real[,Mark_WO_Ind := ifelse(MarkovStatus_Future=="W_Off",1,0)]
-
-# - Set Reference Category for multinomial model | Beta regression preparation
-# (Performing for "From Performing" transitions and Default for "From Default" transitions)
-datCredit_real[,Target_FromP := relevel(factor(MarkovStatus_Future),ref="Perf")]
-datCredit_real[,Target_FromD := relevel(factor(MarkovStatus_Future),ref="Def")]
+smp_frac<-0.7 # sampling fraction during resampling step (training vs validation), after subsampling
 
 
 
@@ -155,42 +144,23 @@ datCredit_smp[, value_ind_slc_past_due_amt := ifelse(is.na(slc_past_due_amt) | s
 
 # - Check the missingness of the variables
 # If they are more than 50% missing - remove
-table(datCredit_smp$value_ind_slc_pmnt_method) %>% prop.table()              # missingness: 8.44% - keep the variable (categorical)
-table(datCredit_smp$value_ind_slc_days_excess) %>% prop.table()              # missingness: 72.5% - discard the variable
-table(datCredit_smp$value_ind_slc_acct_pre_lim_perc) %>% prop.table()        # missingness: 8.44% - keep the variable (numeric) 
-table(datCredit_smp$value_ind_slc_acct_roll_ever_24) %>% prop.table()        # missingness: 8.45% - keep the variable (numeric + delinquency theme)     
-table(datCredit_smp$value_ind_slc_acct_arr_dir_3) %>% prop.table()           # missingness: 8.44% - keep the variable (categorical + delinquency theme)        
-table(datCredit_smp$value_ind_slc_acct_prepaid_perc_dir_12) %>% prop.table() # missingness: 8.44% - keep the variable (numeric)
+table(datCredit_smp$value_ind_slc_pmnt_method) %>% prop.table()              # missingness: 11.6% - keep the variable (categorical)
+table(datCredit_smp$value_ind_slc_days_excess) %>% prop.table()              # missingness: 74.5% - discard the variable
+table(datCredit_smp$value_ind_slc_acct_pre_lim_perc) %>% prop.table()        # missingness: 11.6% - keep the variable (numeric) 
+table(datCredit_smp$value_ind_slc_acct_roll_ever_24) %>% prop.table()        # missingness: 11.6% - keep the variable (numeric + delinquency theme)     
+table(datCredit_smp$value_ind_slc_acct_arr_dir_3) %>% prop.table()           # missingness: 11.6% - keep the variable (categorical + delinquency theme)        
+table(datCredit_smp$value_ind_slc_acct_prepaid_perc_dir_12) %>% prop.table() # missingness: 11.6% - keep the variable (numeric)
 
 # - Remove the variables that have missingness > 50%
 suppressWarnings( datCredit_smp[, `:=`(value_ind_slc_days_excess = NULL, slc_days_excess = NULL)]); gc()
 
 
 
-# --- 2. Basic statistics of each variable
-# - Categorical variables
-varList_Cat <- c('slc_pmnt_method','slc_acct_arr_dir_3',
-                 'g0_Delinq','DefaultStatus1', 'DefaultStatus1_lead_12_max',
-                 'PerfSpellResol_Type_Hist','HasLeftTruncPerfSpell',
-                 'DefSpellResol_Type_Hist','HasLeftTruncDefSpell',
-                 'Event_Type')
-var_Info_Cat <- describe(subset(datCredit_smp, select = varList_Cat))
-
-# - Numeric variables
-varList_Num <- c('slc_past_due_amt','slc_acct_pre_lim_perc','slc_acct_prepaid_perc_dir_12','slc_acct_roll_ever_24',
-                 'Age_Adj', 'PerfSpell_Num','Term','InterestRate_Nom','InterestRate_Margin','Principal','Instalment','Receipt_Inf','Arrears',
-                 'Balance','TimeInPerfSpell','PerfSpell_Age', 'PerfSpell_Counter',
-                 'TimeInDefSpell', 'DefSpell_Age', 'DefSpell_Counter',
-                 'Event_Time', 'g0_Delinq_Num', 'g0_Delinq_SD', 'NewLoans_Aggr_Prop')
-var_Info_Num <- suppressWarnings(describe(subset(datCredit_smp, select = varList_Num)))
-
-
-
-# --- 3. Missing value treatment (categorical variables)
+# --- 2. Missing value treatment (categorical variables)
 # Treatment: create "missing"-bin for all N/A values
 
 # - Payment method
-var_Info_Cat$slc_pmnt_method
+if (doDescribe) describe(datCredit_smp$slc_pmnt_method)
 # Merge with existing "Unknown" bin or empty values
 datCredit_smp[, slc_pmnt_method := 
                 ifelse(is.na(slc_pmnt_method) | slc_pmnt_method == "" | slc_pmnt_method == "Unknown",
@@ -199,11 +169,11 @@ datCredit_smp[, slc_pmnt_method :=
 cat( (sum(datCredit_smp$slc_pmnt_method == "" | is.na(datCredit_smp$slc_pmnt_method) | 
             datCredit_smp$slc_pmnt_method == "Unknown") == 0) %?% 
        'SAFE: Treatment successful for [slc_pmnt_method].\n' %:% 'ERROR: Treatment failed for [slc_pmnt_method] \n' )
-(var_Info_Cat$slc_pmnt_method <- describe(datCredit_smp$slc_pmnt_method))
 ### RESULTS: Treatment for missingness was successful
 
+
 # - Account-level arrears direction vs three months ago
-var_Info_Cat$slc_acct_arr_dir_3
+if (doDescribe) describe(datCredit_smp$slc_acct_arr_dir_3)
 # Merge with existing "N/A" bin or empty values
 datCredit_smp[, slc_acct_arr_dir_3 := 
                 ifelse(is.na(slc_acct_arr_dir_3) | slc_acct_arr_dir_3 == "" | slc_acct_arr_dir_3 == "N/A", 
@@ -212,16 +182,21 @@ datCredit_smp[, slc_acct_arr_dir_3 :=
 cat( ( sum(datCredit_smp$slc_acct_arr_dir_3 == "" | is.na(datCredit_smp$slc_acct_arr_dir_3) |
              datCredit_smp$slc_acct_arr_dir_3 == "N/A") == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_arr_dir_3].\n' %:% 'ERROR: Treatment failed for [slc_acct_arr_dir_3] \n' )
-(var_Info_Cat$slc_acct_arr_dir_3 <- describe(datCredit_smp$slc_acct_arr_dir_3))
 ### RESULTS: Treatment for missingness was successful
 
+# - Save to disk (zip) for quick disk-based retrieval later
+pack.ffdf(paste0(genPath, "creditdata_final4c_smp1a"), datCredit_smp); gc()
 
 
-# --- 4. Missing value treatment (numeric variables)
+
+# --- 3. Missing value treatment (numeric variables)
 # Analyse whether to use mean or median value imputation
 
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c_smp1a"), tempPath)
+
 # - Prepaid/available funds to limit
-var_Info_Num$slc_acct_pre_lim_perc; hist(datCredit_smp$slc_acct_pre_lim_perc, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_acct_pre_lim_perc); hist(datCredit_smp$slc_acct_pre_lim_perc, breaks='FD')
 datCredit_smp[is.na(slc_acct_pre_lim_perc), .N] / datCredit_smp[,.N] * 100
 ### RESULTS: Highly right-skewed distribution, with mean of ~0.09 vs median of 0,
 # bounded by [0, 0.79] for 5%-95% percentiles; no outliers
@@ -233,12 +208,14 @@ datCredit_smp[, slc_acct_pre_lim_perc_imputed_med :=
 cat( ( datCredit_smp[is.na(slc_acct_pre_lim_perc_imputed_med), .N ] == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_pre_lim_perc_imputed_med].\n' %:% 
        'ERROR: Treatment failed for [slc_acct_pre_lim_perc_imputed_med] \n' )
-(var_Info_Num$slc_acct_pre_lim_perc_imputed_med <- describe(datCredit_smp$slc_acct_pre_lim_perc_imputed_med)); hist(datCredit_smp$slc_acct_pre_lim_perc_imputed_med, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_acct_pre_lim_perc_imputed_med)
+hist(datCredit_smp$slc_acct_pre_lim_perc_imputed_med, breaks='FD')
 ### RESULTS: Imputation successful, with mean of 0.085 vs median of 0,
 # bounded by [0, 0.73] for 5%-95% percentiles; no outliers
 
+
 # - Number of times an account was in arrears over last 24 months
-var_Info_Num$slc_acct_roll_ever_24; hist(datCredit_smp$slc_acct_roll_ever_24, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_acct_roll_ever_24); hist(datCredit_smp$slc_acct_roll_ever_24, breaks='FD')
 datCredit_smp[is.na(slc_acct_roll_ever_24), .N] / datCredit_smp[,.N] * 100
 ### RESULTS: Highly right-skewed distribution with mean of 0.4892, though discrete values with 80% of data having 0-value.
 # Use mean imputation, given 8.45% missingness degree, trading off the minor distributional distortion as a result
@@ -249,20 +226,23 @@ datCredit_smp[, slc_acct_roll_ever_24_imputed_mean :=
 cat( ( datCredit_smp[is.na(slc_acct_roll_ever_24_imputed_mean), .N ] == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_roll_ever_24_imputed_mean].\n' %:% 
        'ERROR: Treatment failed for [slc_acct_roll_ever_24_imputed_mean] \n' )
-(var_Info_Num$slc_acct_roll_ever_24_imputed_mean <- describe(datCredit_smp$slc_acct_roll_ever_24_imputed_mean)); hist(datCredit_smp$slc_acct_roll_ever_24_imputed_mean, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_acct_roll_ever_24_imputed_mean)
+hist(datCredit_smp$slc_acct_roll_ever_24_imputed_mean, breaks='FD')
 ### RESULTS: Imputation successful, categorical variable now has 6 distinct classes, with majority having 0-value, while
 # the imputed cases (value of 0.48) being the second most prevalent.
+
 
 # - Categorical version of slc_acct_roll_ever
 datCredit_smp[,slc_acct_roll_ever_24_cat:=factor(ifelse(is.na(slc_acct_roll_ever_24) | slc_acct_roll_ever_24 == "","Missing",slc_acct_roll_ever_24))]
 cat((datCredit_smp[is.na(slc_acct_roll_ever_24_cat), .N ] == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_roll_ever_24_cat].\n' %:% 
        'ERROR: Treatment failed for [slc_acct_roll_ever_24_cat] \n')
-(var_Info_Num$slc_acct_roll_ever_24_cat <- describe(datCredit_smp$slc_acct_roll_ever_24_cat))
+if (doDescribe) describe(datCredit_smp$slc_acct_roll_ever_24_cat)
 
 
 # - Percentage-valued direction of prepaid/available funds - current compared to 12 months ago
-var_Info_Num$slc_acct_prepaid_perc_dir_12; hist(datCredit_smp[slc_acct_prepaid_perc_dir_12<=5, slc_acct_prepaid_perc_dir_12])
+if (doDescribe) describe(datCredit_smp$slc_acct_prepaid_perc_dir_12)
+hist(datCredit_smp[slc_acct_prepaid_perc_dir_12<=5, slc_acct_prepaid_perc_dir_12])
 datCredit_smp[is.na(slc_acct_prepaid_perc_dir_12), .N] / datCredit_smp[,.N] * 100
 ### RESULTS: Highly right-skewed distribution, with mean of ~2.26m vs median of 0, 
 # bounded by [0, 3.34] for 5%-95% percentiles; some very large outliers
@@ -275,12 +255,14 @@ datCredit_smp[, slc_acct_prepaid_perc_dir_12_imputed_med :=
 cat( ( datCredit_smp[is.na(slc_acct_prepaid_perc_dir_12_imputed_med), .N] == 0) %?% 
        'SAFE: Treatment successful for [slc_acct_prepaid_perc_dir_12_imputed_med].\n' %:% 
        'ERROR: Treatment failed for [slc_acct_prepaid_perc_dir_12_imputed_med] \n' )
-describe(datCredit_smp$slc_acct_prepaid_perc_dir_12_imputed_med); hist(datCredit_smp[slc_acct_prepaid_perc_dir_12_imputed_med<=5, slc_acct_prepaid_perc_dir_12_imputed_med])
+if (doDescribe) describe(datCredit_smp$slc_acct_prepaid_perc_dir_12_imputed_med); 
+hist(datCredit_smp[slc_acct_prepaid_perc_dir_12_imputed_med<=5, slc_acct_prepaid_perc_dir_12_imputed_med])
 ### RESULTS: Imputation successful, with mean of ~2m vs median of 0,
 # bounded by [0, 2.99] for 5%-95% percentiles; extreme outliers
 
+
 # - Amount by which the account is overdue at the associated reporting date
-var_Info_Num$slc_past_due_amt; hist(datCredit_smp$slc_past_due_amt, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_past_due_amt); hist(datCredit_smp$slc_past_due_amt, breaks='FD')
 datCredit_smp[is.na(slc_past_due_amt), .N] / datCredit_smp[,.N] * 100
 ### RESULTS: Highly right-skewed distribution, with mean of 2721 vs median of 0, 
 # bounded by [0, 5714] for 5%-95% percentiles; some very large outliers
@@ -293,12 +275,14 @@ datCredit_smp[, slc_past_due_amt_imputed_med :=
 cat( ( datCredit_smp[is.na(slc_past_due_amt_imputed_med), .N] == 0) %?% 
        'SAFE: Treatment successful for [slc_past_due_amt_imputed_med].\n' %:% 
        'ERROR: Treatment failed for [slc_past_due_amt_imputed_med] \n' )
-(var_Info_Num$slc_past_due_amt_imputed_med <- describe(datCredit_smp$slc_past_due_amt_imputed_med)); hist(datCredit_smp$slc_past_due_amt_imputed_med, breaks='FD')
+if (doDescribe) describe(datCredit_smp$slc_past_due_amt_imputed_med)
+hist(datCredit_smp$slc_past_due_amt_imputed_med, breaks='FD')
 ### RESULTS: Imputation successful, with mean of 2491 vs median of 0,
 # bounded by [0, 4638] for 5%-95% percentiles; extreme outliers
 
+
 # - InterestRate_Margin (incorporating risk-based pricing info)
-var_Info_Num$InterestRate_Margin; hist(datCredit_smp$InterestRate_Margin, breaks="FD")
+if (doDescribe) describe(datCredit_smp$InterestRate_Margin); hist(datCredit_smp$InterestRate_Margin, breaks="FD")
 datCredit_smp[is.na(InterestRate_Margin), .N] / datCredit_smp[,.N] * 100
 ### RESULTS: Highly right-skewed distribution (as expected), with mean of -0.007 vs median of -0.008, 
 # bounded by [-0.02, 0.01] for 5%-95% percentiles; some negative outliers distort shape of distribution
@@ -310,13 +294,20 @@ datCredit_smp[, InterestRate_Margin_imputed_mean :=
 cat( ( datCredit_smp[is.na(InterestRate_Margin_imputed_mean), .N] == 0) %?% 
        'SAFE: Treatment successful for [InterestRate_Margin_imputed_mean].\n' %:% 
        'ERROR: Treatment failed for [InterestRate_Margin_imputed_mean] \n' )
-(var_Info_Num$InterestRate_Margin_imputed_mean <- describe(datCredit_smp$InterestRate_Margin_imputed_mean)); hist(datCredit_smp$InterestRate_Margin_imputed_mean, breaks="FD")
+if (doDescribe) describe(datCredit_smp$InterestRate_Margin_imputed_mean)
+hist(datCredit_smp$InterestRate_Margin_imputed_mean, breaks="FD")
 ### RESULTS: Imputation successful, with mean of -0.007 vs median of -0.008,
 # bounded by [-0.02, 0.01] for 5%-95% percentiles; some negative outliers distort shape of distribution
 
+# - Save to disk (zip) for quick disk-based retrieval later
+pack.ffdf(paste0(genPath, "creditdata_final4c_smp1b"), datCredit_smp); gc()
 
 
-# --- 5. Feature Engineering: ratio-type variables (Period-level)
+
+# --- 4. Feature Engineering: ratio-type variables (Period-level)
+
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c_smp1b"), tempPath)
 
 # - Loan age to loan term
 datCredit_smp[, AgeToTerm := Age_Adj/Term] # where the loan is in its lifetime
@@ -324,9 +315,11 @@ datCredit_smp[, AgeToTerm := Age_Adj/Term] # where the loan is in its lifetime
 cat( ( datCredit_smp[is.na(AgeToTerm), .N] == 0) %?% 
        'SAFE: New feature [AgeToTerm] has logical values.\n' %:% 
        'WARNING: New feature [AgeToTerm] has illogical values \n' )
-(var_Info_Num$AgeToTerm <- describe(datCredit_smp$AgeToTerm)); hist(datCredit_smp[AgeToTerm<2, AgeToTerm], breaks='FD')
+if (doDescribe) describe(datCredit_smp$AgeToTerm)
+hist(datCredit_smp[AgeToTerm<2, AgeToTerm], breaks='FD')
 ### RESULTS: Highly right-skewed distribution as expected, with mean of 0.37 vs median of 0.29,
 # bounded by [0.03, 0.9] for 5%-95% percentiles; some large outliers (max: 224)
+
 
 # - Balance to loan term | how much is still outstanding compared to Principal/Limit
 datCredit_smp[, BalanceToPrincipal := Balance/Principal]
@@ -335,13 +328,14 @@ cat( ( datCredit_smp[is.na(BalanceToPrincipal), .N] == 0) %?%
        'SAFE: New feature [BalanceToPrincipal] has logical values.\n' %:% 
        'WARNING: New feature [BalanceToPrincipal] has illogical values \n' )
 # distributional analysis
-(var_Info_Num$BalanceToTerm <- describe(datCredit_smp$BalanceToPrincipal)); hist(datCredit_smp$BalanceToPrincipal, breaks='FD')
+if (doDescribe) describe(datCredit_smp$BalanceToPrincipal)
+hist(datCredit_smp$BalanceToPrincipal, breaks='FD')
 ### RESULTS: Highly left-skewed distribution, with mean of 0.7 vs median of 0.85,
 # bounded by [~0, 1] for 5%-95% percentiles; no outliers
 
 
 
-# --- 6. Feature Engineering: Binning and factorisation
+# --- 5. Feature Engineering: Binning and factorisation
 # - Condense the payment group
 datCredit_smp[, pmnt_method_grp := 
                 case_when(slc_pmnt_method == "Debit Order FNB account" | slc_pmnt_method == "Debit Order other bank" ~ "Debit Order",
@@ -351,13 +345,14 @@ datCredit_smp[, pmnt_method_grp :=
 cat((datCredit_smp[is.na(pmnt_method_grp), .N] == 0) %?% 
       'SAFE: New feature [pmnt_method_grp] has logical values.\n' %:% 
       'WARNING: New feature [pmnt_method_grp] has illogical values \n' )
-(var_Info_Cat$pmnt_method_grp <- describe(datCredit_smp$pmnt_method_grp))
+if (doDescribe) describe(datCredit_smp$pmnt_method_grp)
 ### RESULTS: Bins grouped logically such that each bin now has sufficient observations, with proportions:
 # Debit Order: 67.9%; MISSING_DATA: 9.7%; Salary/Suspense: 7.7%; Statement: 14.8%
 
+
 # - Factorised [g0_Delinq] variable
 datCredit_smp[,g0_Delinq_fac := as.factor(g0_Delinq)]
-(var_Info_Cat$g0_Delinq_fac <- describe(datCredit_smp$g0_Delinq_fac))
+if (doDescribe) describe(datCredit_smp$g0_Delinq_fac)
 ### RESULTS: Proportion of observations in each g0 bucket:
 # 0: 89.8%; 1: 5.5%; 2: 0.8%; 3: 3.9%
 # [SANITY CHECK] Check new feature for illogical values
@@ -365,9 +360,10 @@ cat((anyNA(datCredit_smp$g0_Delinq_fac)) %?% 'WARNING: New feature [g0_Delinq_fa
       'SAFE: New feature [g0_Delinq_fac] has no missing values. \n')
 ### RESULTS: [g0_Delinq_fac] created without any missingness
 
+
 # - Bin [InterestRate_Margin_imputed] | Binning the variable into three equally sized bins
 datCredit_smp[, InterestRate_Margin_imputed_bin := factor(ntile(InterestRate_Margin_imputed_mean, n=3))]
-(var_Info_Cat$InterestRate_Margin_Imputed_Bin <- describe(datCredit_smp$InterestRate_Margin_imputed_bin))
+if (doDescribe) describe(datCredit_smp$InterestRate_Margin_imputed_bin)
 ### RESULTS: Binning was successful into three equal sized bins each having 499 940 observations
 # [SANITY CHECK] Check new feature for illogical values
 cat((anyNA(datCredit_smp$InterestRate_Margin_imputed_bin)) %?% 'WARNING: New feature [InterestRate_Margin_imputed_bin] has missing values. \n' %:%
@@ -376,7 +372,7 @@ cat((anyNA(datCredit_smp$InterestRate_Margin_imputed_bin)) %?% 'WARNING: New fea
 
 
 
-# --- 7. Feature Engineering: Inflating time-sensitive monetary variables to the latest date
+# --- 6. Feature Engineering: Inflating time-sensitive monetary variables to the latest date
 #- Load macroeconmic information to facilitate inflation
 if (!exists('datMV')) unpack.ffdf(paste0(genPath,"datMV"), tempPath)
 
@@ -400,17 +396,30 @@ datCredit_smp[, Instalment_Real := Instalment*Inf_Factor]
 cat( (all(anyNA(datCredit_smp$Principal_Real), anyNA(datCredit_smp$Balance_Real), anyNA(datCredit_smp$Instalment_Real)))
     %?% paste0('WARNING: Some values of [Principal_Real], [Balance_Real], and/or [Instalment_Real] not created successfully. \n') %:%
       'SAFE: Variables inflated successfully. \n')
-(var_Info_Num$Principal_Real <- describe(datCredit_smp$Principal_Real))
-(var_Info_Num$Balance_Real <- describe(datCredit_smp$Balance_Real))
-(var_Info_Num$Instalment_Real <- describe(datCredit_smp$Instalment_Real))
+if (doDescribe) describe(datCredit_smp$Principal_Real)
+if (doDescribe) describe(datCredit_smp$Balance_Real)
+if (doDescribe) describe(datCredit_smp$Instalment_Real)
 ### RESULTS: Variables created successfully without any missingness
+# [Principal_Real]# Highly right-skewed distribution, with mean of 8.95m vs median of 7.9m
+#                 bounded by [127k, 2.25m] for 5%-95% percentiles; severe outliers to the right: 95.6m
+# [Balance_Real]: Highly right-skewed distribution, with mean of 6.89m vs median of 5.93m
+#                 bounded by [71, 1.5m] for 5%-95% percentiles; severe outliers to the right: 94m
+# [Instalment_Real]: Highly right-skewed distribution, with mean of 8.4k vs median of 7.3k
+#                 bounded by [497, 21k] for 5%-95% percentiles; severe outliers to the right: 20m; left: 0
 
 # - Clean up
 rm(datMV, date_range, datInflation)
 
+# - Save to disk (zip) for quick disk-based retrieval later
+pack.ffdf(paste0(genPath, "creditdata_final4c_smp1c"), datCredit_smp); gc()
 
 
-# --- 8. Featuring Engineering: Portfolio-level information
+
+
+# --- 7. Featuring Engineering: Portfolio-level information
+
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c_smp1c"), tempPath)
 
 # - Pre default delinquency rate
 #Note: Creating an aggregated dataset with which to fuse to the full dataset
@@ -435,7 +444,7 @@ datCredit_smp <- merge(datCredit_smp, dat_g0_Delinq_Aggr, by="Date", all.x=T)
 cat( ( sum(datCredit_smp[DefaultStatus1==0, sum(g0_Delinq_Any_Aggr_Prop + sum(g0_Delinq==0)/.N, na.rm=T), by=Date][,2])==sum(datCredit_smp[DefaultStatus1==0,.N,by=Date][,2]) & (sum(is.na(datCredit_smp$g0_Delinq_Any_Aggr_Prop))==0)) %?% 
        'SAFE: New feature [g0_Delinq_Any_Aggr_Prop] has logical values.\n' %:% 
        'WARNING: New feature [g0_Delinq_Any_Aggr_Prop] has illogical values \n' )
-(var_Info_Num$g0_Delinq_Any_Aggr_Prop <- describe(datCredit_smp$g0_Delinq_Any_Aggr_Prop)); plot(unique(datCredit_smp$g0_Delinq_Any_Aggr_Prop), type="b")
+if (doDescribe) describe(datCredit_smp$g0_Delinq_Any_Aggr_Prop); plot(unique(datCredit_smp$g0_Delinq_Any_Aggr_Prop), type="b")
 ### RESULTS: Variable has a logical trend, with mean of 0.059 vs median of 0.049, 
 # bounded by [0.038, 0.12] for 5%-95% percentiles; no large outliers
 
@@ -446,17 +455,18 @@ cat((anyNA(datCredit_smp$g0_Delinq_Any_Aggr_Prop)) %?% 'WARNING: New feature [g0
 
 
 # - Average pre-default delinquency level
-datCredit_smp[,g0_Delinq_Ave:=mean(ifelse(DefaultStatus1==0,g0_Delinq,0), na.rm=T), by=Date]
+datCredit_smp[,g0_Delinq_Ave := mean(ifelse(DefaultStatus1==0,g0_Delinq,0), na.rm=T), by=Date]
 # [SANITY CHECK] Check new feature for illogical values
 cat( (sum(datCredit_smp[, sum(is.na(g0_Delinq_Ave)), by=Date][,2])==0) %?% 
        'SAFE: New feature [g0_Delinq_Ave] has logical values.\n' %:% 
        'WARNING: New feature [g0_Delinq_Ave] has illogical values \n' )
-(var_Info_Num$g0_Delinq_Ave <- describe(datCredit_smp$g0_Delinq_Ave)); hist(datCredit_smp$g0_Delinq_Ave, breaks="FD")
+if (doDescribe) describe(datCredit_smp$g0_Delinq_Ave); hist(datCredit_smp$g0_Delinq_Ave, breaks="FD")
 ### RESULTS: Follows a logical trend, with mean of 0.062 vs median of 0.051,
 # bounded by [0.04, 0.126] for 5%-95% percentiles; no outliers
 
+
 # - Create a lagged version of the aggregated default rate created in script 2f
-dat_DefaultRate<-datCredit_smp[!duplicated(Date),list(Date,DefaultStatus1_Aggr_Prop)]
+dat_DefaultRate <- datCredit_smp[!duplicated(Date),list(Date,DefaultStatus1_Aggr_Prop)]
 # Applying various lags
 lags <- c(1,2,3,4,5,6,9,12) # Lags
 ColNames <- colnames(dat_DefaultRate)[-1] # Names of the columns
@@ -475,7 +485,7 @@ datCredit_smp <- merge(datCredit_smp, dat_DefaultRate[,-"DefaultStatus1_Aggr_Pro
 # [Sanity Check] Check if merge was successful by checking for missingness in the 12-month lagged version of the default rate
 cat((anyNA(datCredit_smp$DefaultStatus1_Aggr_Prop_Lag_12)) %?% 'WARNING: Merge unsuccessful, NA values present. \n' %:%
       'SAFE: Merge successful, no NA values present. \n')
-(var_Info_Num$DefaultRate_12 <- describe(datCredit_smp$DefaultStatus1_Aggr_Prop_Lag_12))
+if (doDescribe) describe(datCredit_smp$DefaultStatus1_Aggr_Prop_Lag_12)
 ### RESULTS: No missingness after merge, merge successful. Original DefaultRate_12 has mean of 0.05 and median of 0.046; 
 # bounded by [0.028, 0.084] for 5%-95% percentiles; no outliers
 
@@ -496,8 +506,10 @@ cat( (sum(datCredit_smp[, sum(is.na(ArrearsToBalance_Aggr_Prop)), by=Date][,2])=
 cat( (sum(datCredit_smp[, sum(is.na(InstalmentToBalance_Aggr_Prop)), by=Date][,2])==0) %?% 
        'SAFE: New feature [InstalmentToBalance_Aggr_Prop] has logical values.\n' %:% 
        'WARNING: New feature [InstalmentToBalance_Aggr_Prop] has illogical values \n' )
-(var_Info_Num$InstalmentToBalance_Aggr_Prop <- describe(datCredit_smp$InstalmentToBalance_Aggr_Prop)); plot(unique(datCredit_smp$Date),unique(datCredit_smp$InstalmentToBalance_Aggr_Prop), type="b")
-(var_Info_Num$ArrearsToBalance_Aggr_Prop <- describe(datCredit_smp$ArrearsToBalance_Aggr_Prop)); plot(unique(datCredit_smp$ArrearsToBalance_Aggr_Prop), type="b")
+if (doDescribe) describe(datCredit_smp$InstalmentToBalance_Aggr_Prop)
+plot(unique(datCredit_smp$Date),unique(datCredit_smp$InstalmentToBalance_Aggr_Prop), type="b")
+if (doDescribe) describe(datCredit_smp$ArrearsToBalance_Aggr_Prop)
+plot(unique(datCredit_smp$ArrearsToBalance_Aggr_Prop), type="b")
 ### RESULTS [InstalmentToBalance_Aggr_Prop]: Variable has high volatility around 2010 as seen through the graphical plot. Mean of 0.012 vs median of 0.012,
 #            bounded by [0.011, 0.014] for 5%-95% percentiles; no outliers
 #                   [ArrearsToBalance_Aggr_Prop]: Variable has  mean of 0.0006 vs median of 0.0005,
@@ -509,7 +521,8 @@ datCredit_smp[, CuringEvents_Aggr_Prop := sum(PerfSpell_Counter==1 & PerfSpell_N
 cat( (sum(datCredit_smp[, sum(is.na(CuringEvents_Aggr_Prop)), by=Date][,2])==0) %?% 
        'SAFE: New feature [CuringEvents_Aggr_Prop] has logical values.\n' %:% 
        'WARNING: New feature [CuringEvents_Aggr_Prop] has illogical values \n' )
-(var_Info_Num$CuringEvents_Aggr_Prop <- describe(datCredit_smp$CuringEvents_Aggr_Prop)); plot(unique(datCredit_smp$CuringEvents_Aggr_Prop), type="b")
+if (doDescribe) describe(datCredit_smp$CuringEvents_Aggr_Prop); 
+plot(unique(datCredit_smp$CuringEvents_Aggr_Prop), type="b")
 ### RESULTS: Variable has mean of 0.0013 vs median of 0.0013,
 # bounded by [0.0002, 0.0025] for 5%-95% percentiles; no outliers
 
@@ -522,7 +535,8 @@ datCredit_smp[, AgeToTerm_Aggr_Mean := mean(Age_Adj/Term, na.rm=T), by=Date]
 cat( (sum(datCredit_smp[, sum(is.na(AgeToTerm_Aggr_Mean)), by=Date][,2])==0) %?% 
        'SAFE: New feature [AgeToTerm_Aggr_Mean] has logical values.\n' %:% 
        'WARNING: New feature [AgeToTerm_Aggr_Mean] has illogical values \n' )
-(var_Info_Num$AgeToTerm_Aggr_Mean <- describe(datCredit_smp$AgeToTerm_Aggr_Mean)); plot(unique(datCredit_smp$AgeToTerm_Aggr_Mean), type="b")
+if (doDescribe) describe(datCredit_smp$AgeToTerm_Aggr_Mean)
+plot(unique(datCredit_smp$AgeToTerm_Aggr_Mean), type="b")
 ### RESULTS: Variable behaves as expected, i.e., increases as the loan portfolio matures. Has mean 0.37 and median 0.39
 # bounded by [0.26, 0.41] for 5%-95% percentiles; no outliers
 
@@ -532,7 +546,8 @@ datCredit_smp[, PerfSpell_Maturity_Aggr_Mean := mean(PerfSpell_Age, na.rm=T), by
 cat( (sum(datCredit_smp[, sum(is.na(PerfSpell_Maturity_Aggr_Mean)), by=Date][,2])==0) %?% 
        'SAFE: New feature [PerfSpell_Maturity_Aggr_Mean] has logical values.\n' %:% 
        'WARNING: New feature [Perf_SpellMaturity_Aggr_Mean] has illogical values \n' )
-(var_Info_Num$PerfSpell_Maturity_Aggr_Mean <- describe(datCredit_smp$PerfSpell_Maturity_Aggr_Mean)); plot(unique(datCredit_smp$PerfSpell_Maturity_Aggr_Mean), type="b")
+if (doDescribe) describe(datCredit_smp$PerfSpell_Maturity_Aggr_Mean)
+plot(unique(datCredit_smp$PerfSpell_Maturity_Aggr_Mean), type="b")
 ### RESULTS: Mean performance spell age seem to decrease over time. Has mean 138.7 and median 143.1;
 # bounded by [107, 153] for 5%-95% percentiles; no outliers
 
@@ -570,18 +585,51 @@ for (i in 1:length(list_merge_variables)){
 }
 cat( (length(which(results_missingness > 0)) == 0) %?% "SAFE: No missingness, fusion with aggregated data is successful.\n" %:%
        "WARNING: Missingness in certain aggregated fields detected, fusion compromised.\n")
-(var_Info_Num$InterestRate_Margin_Aggr_Med <- describe(datCredit_smp$InterestRate_Margin_Aggr_Med)); plot(datCredit_smp[!duplicated(Date),InterestRate_Margin_Aggr_Med], type="b") # Only saving the base variable's descriptive statistics
+if (doDescribe) describe(datCredit_smp$InterestRate_Margin_Aggr_Med)
+plot(datCredit_smp[!duplicated(Date),InterestRate_Margin_Aggr_Med], type="b") # Only saving the base variable's descriptive statistics
 ### RESULTS: Variable follows a logical trend over time. Has mean -0.008 and median -0.009;
 # bounded by [-0.012, -0.0035] for 5%-95% percentiles; no outliers
+
+
+# - Proportion of unique delinquency levels per cohort
+datCredit_smp[, g0_Delinq_1_Mean := sum(g0_Delinq==1, na.rm=T)/.N, by=list(Date)]
+datCredit_smp[, g0_Delinq_2_Mean := sum(g0_Delinq==2, na.rm=T)/.N, by=list(Date)]
+cat( (( datCredit_smp[is.na(g0_Delinq_1_Mean),.N] + datCredit_smp[is.na(g0_Delinq_2_Mean),.N])==0) %?% 
+       'SAFE: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have non-missing values.\n' %:% 
+       'WARNING: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have missing values \n' )
+if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_1_Mean))
+plot(datCredit_smp[!duplicated(Date),g0_Delinq_1_Mean], type="b")
+if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_2_Mean))
+plot(datCredit_smp[!duplicated(Date),g0_Delinq_2_Mean], type="b")
+### RESULTS: g0_Delinq_1_Mean has mean of 0.05276 vs median of 0.04380
+#     bounded by [0.038, 0.10] for 5%-95% percentiles; no outliers
+# g0_Delinq_2_Mean has mean of 0.008208 vs median of 0.007571
+#     bounded by [0.0055, 0.0148] for 5%-95% percentiles; no outliers
+
+
+# - Total outstanding balance relative to limit/principals; degree of credit leverage
+datCredit_smp[, CreditLeverage := sum(Balance, na.rm=T)/sum(Principal, na.rm=T), by=list(Date)]
+cat( ( datCredit_smp[is.na(CreditLeverage),.N] ==0) %?% 
+       'SAFE: New feature [CreditLeverage] has non-missing values.\n' %:% 
+       'WARNING: New feature [CreditLeverage] has missing values \n' )
+if (doDescribe) describe(unique(datCredit_smp$CreditLeverage))
+plot(datCredit_smp[!duplicated(Date),CreditLeverage], type="b")
+### RESULTS: CreditLeverage has mean of 0.7641 vs median of 0.7555
+#     bounded by [0.7222, 0.8167] for 5%-95% percentiles; no outliers
+
+
+# - Save to disk (zip) for quick disk-based retrieval later
+pack.ffdf(paste0(genPath, "creditdata_final4c_smp1d"), datCredit_smp); gc()
 
 # Clean up
 rm(dat_IRM_Aggr, dat_IRM_Aggr_Check1, list_merge_variables, results_missingness, output, lags, ColNames)
 
 
 
-# --- 9. Macroeconomic feature engineering
+# --- 8. Macroeconomic feature engineering
 
-# - Loading in the raw dataset
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c_smp1d"), tempPath)
 if (!exists('datMV')) unpack.ffdf(paste0(genPath,"datMV"), tempPath)
 
 # - Lags of all MVs
@@ -640,50 +688,104 @@ cat( (length(which(results_missingness > 0)) == 0) %?% "SAFE: No missingness, fu
 ### RESULTS: No missingness observed, continue with packing away the data
 
 # - Save a Macroeconomic Set that will be used in the Beta regression modelling
-max_Dte<-max(datCredit_smp$Date)
-min_Dte<-min(datCredit_smp$Date)
-Macros_Set<-datMV[(Date>=min_Dte)&(Date<max_Dte),]
+Macros_Set <- subset(datMV, (Date>=min(datCredit_smp$Date)) & (Date<max(datCredit_smp$Date)))
 
-# - Pack away the Macros Set
+# - Save reduced macro set for beta regression later
 pack.ffdf(paste0(genPath, "creditdata_Macros_Set"), Macros_Set)
 
+# - Save to disk (zip) for quick disk-based retrieval later
+pack.ffdf(paste0(genPath, "creditdata_final4c_smp1e"), datCredit_smp); gc()
+
 # - Cleanup
-rm(datMV); gc()
+rm(datMV, list_merge_variables, results_missingness, datMV_Check1, datMV_Check2, Macros_Set); gc()
 
 
-# --- Save "description" objects to disk
-pack.ffdf(paste0(genObjPath, "var_Info_Cat"), var_Info_Cat)
-pack.ffdf(paste0(genObjPath, "var_Info_Num"), var_Info_Num)
 
-# --- Save fused- and enriched subsampled dataset for quick disk-based retrieval later
+# --- 9. Markov & Beta Regression related feature engineering
+
+# - Confirm that required data objects are loaded into memory
+if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_final4c_smp1e"), tempPath)
+
+# - Decompose future state into indicator variables respective to each possible state
+datCredit_smp[,Mark_Perf_Ind := ifelse(MarkovStatus_Future=="Perf",1,0)]
+datCredit_smp[,Mark_Def_Ind := ifelse(MarkovStatus_Future=="Def",1,0)]
+datCredit_smp[,Mark_Set_Ind := ifelse(MarkovStatus_Future=="Set",1,0)]
+datCredit_smp[,Mark_WO_Ind := ifelse(MarkovStatus_Future=="W_Off",1,0)]
+
+# - Set Reference Category for multinomial logistic regression model
+# (Performing for "From Performing" transitions and Default for "From Default" transitions)
+datCredit_smp[,Target_FromP := relevel(factor(MarkovStatus_Future),ref="Perf")]
+datCredit_smp[,Target_FromD := relevel(factor(MarkovStatus_Future),ref="Def")]
+
+# - Reorder dataset
+datCredit_smp <- datCredit_smp %>% relocate(Mark_Perf_Ind, Mark_Def_Ind, Mark_Set_Ind, Mark_WO_Ind, Target_FromP, Target_FromD, 
+                                           .after=MarkovStatus_Future)
+check1 <- subset(datCredit_smp, LoanID == unique(datCredit_smp[MarkovStatus_Future=="W_Off", LoanID])[1],
+                 select=c("LoanID", "PerfSpell_Key", "PerfSpell_Num", "Prev_Spell_Age", "PerfSpellResol_Type_Hist",
+                          "MarkovStatus","MarkovStatus_Future", "Mark_Perf_Ind", "Mark_Def_Ind", "Mark_Set_Ind",
+                          "Mark_WO_Ind", "Target_FromP", "Target_FromD"))
+check2 <- subset(datCredit_smp, LoanID == unique(datCredit_smp[Target_FromP != Target_FromD, LoanID])[1],
+                 select=c("LoanID", "PerfSpell_Key", "PerfSpell_Num", "Prev_Spell_Age", "PerfSpellResol_Type_Hist",
+                          "MarkovStatus","MarkovStatus_Future", "Mark_Perf_Ind", "Mark_Def_Ind", "Mark_Set_Ind",
+                          "Mark_WO_Ind", "Target_FromP", "Target_FromD"))
+
+# - Aggregate to cohort-level and create transition rates: From Performing state
+datAggr_P <- datCredit_smp[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                             by=list(Date)]
+# - Aggregate to cohort-level and create transition rates: From default state
+datAggr_D <- datCredit_smp[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+                           by=list(Date)]
+# - Merge sets together and create lagged versions of each transition rate
+datAggr <- merge(datAggr_P, datAggr_D, by="Date")
+datAggr[, Prev_PD := shift(Y_PerfToDef,n=1,type="lag",fill=0)]
+datAggr[, Prev_PP := shift(Y_PerfToPerf,n=1,type="lag",fill=0)]
+datAggr[, Prev_PS := shift(Y_PerfToSet,n=1,type="lag",fill=0)]
+datAggr[, Prev_DP := shift(Y_DefToPerf,n=1,type="lag",fill=0)]
+datAggr[, Prev_DW := shift(Y_DefToWO,n=1,type="lag",fill=0)]
+datAggr[, Prev_DD := shift(Y_DefToDef,n=1,type="lag",fill=0)]
+datAggr[, Prev_DS := shift(Y_DefToSet,n=1,type="lag",fill=0)]
+
+# - Merge aggregations back to credit dataset
+datCredit_smp <- merge(datCredit_smp, datAggr, by="Date", all.x=T); gc()
+
+# - Save fused- and enriched subsampled dataset for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_smp"), datCredit_smp); gc()
 
+# - Cleanup
+rm(check1, check2, datAggr_P, datAggr_D, datAggr)
 
 
 
-# --- 10. Apply basic cross-validation clustered resampling scheme with 1-way stratified sampling
 
-# - Loading in the raw dataset
+
+
+# ------ 5. Apply basic cross-validation clustered resampling scheme with 1-way stratified sampling
+
+# - Confirm that required data objects are loaded into memory
 if (!exists('datCredit_smp')) unpack.ffdf(paste0(genPath,"creditdata_smp"), tempPath)
+if (!exists('datKeys_sampled')) unpack.ffdf(paste0(genPath,"creditdata_final_sampledKeys"), tempPath)
 
 # - Set seed and training set proportion
 set.seed(1,kind="Mersenne-Twister")
 
-
-# - Obtain first observations of all LoanIDs
-dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
-
-# - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys2 <- dat_temp2 %>% group_by(Date_Origination) %>% slice_sample(prop=smp_frac)
+# - Use 1-way stratified sampling by the origination date given the previously samnpled keys (loan IDs)
+dat_train_keys <- datKeys_sampled %>% group_by(Date_Origination) %>% slice_sample(prop=smp_frac)
 
 # - Create the subset dataset
-datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
-datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
+datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_train_keys$LoanID)
+datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_train_keys$LoanID))
 
 # - [SANITY CHECK] Ensuring that the resampling scheme reconstitutes the full (subsampled) dataset
 cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SAFE: Resampling scheme implemented successfully\n" %:%
        "WARNING: Resampling scheme not implemented successfully.\n")
 
+# Exclude end-of-life records for which we do not have future values
 datCredit_train<-datCredit_train[MarkovStatus_Future!="NA",]
 datCredit_valid<-datCredit_valid[MarkovStatus_Future!="NA",]
 
@@ -695,110 +797,7 @@ pack.ffdf(paste0(genPath, "creditdata_valid"), datCredit_valid); gc()
 # --- Clean up
 rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
    stratifiers, smp_perc, smp_size, targetVar, timeVar, smp_frac,
-   datMV_Check1, datMV_Check2, list_merge_variables, results_missingness,
    ColNames, lags, datCredit_smp)
 
-
-
-
-
-# ----- 5. Beta regression data preperation
-# --- 1. Beta Regression Training Set
-# --- Create Target Variables, i.e., transition rates
-# - From performing
-Targets_P<-datCredit_train[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                   Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                   Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                   Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
-                    by=list(Date)]
-# - From default
-Targets_D<-datCredit_train[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                   Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                   Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                   Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
-                    by=list(Date)]
-
-# - Keep relevant features
-Features_Train<-datCredit_train[!duplicated(Date),]%>%select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
-Features_Train[,Date_Origination:=NULL]
-
-# - Engineer more portfolio level features
-Feature_Eng<-datCredit_train[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
-                             Ave_Margin=mean(InterestRate_Margin,na.rm=TRUE),
-                             g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
-                             g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
-                             g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
-
-# - Merge into one set that will be used to train all the BR-models
-BR_Train<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
-BR_Train<-merge(BR_Train, Targets_P,by="Date",all.x=TRUE)
-BR_Train<-merge(BR_Train, Targets_D,by="Date",all.x=TRUE)
-
-# - Create Previous transition rate Covariates
-Previous<-BR_Train[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
-                              Prev_PP=shift(Y_PerfToPerf,n=1,type="lag",fill=0),
-                              Prev_PS=shift(Y_PerfToSet,n=1,type="lag",fill=0),
-                              Prev_DP=shift(Y_DefToPerf,n=1,type="lag",fill=0),
-                              Prev_DW=shift(Y_DefToWO,n=1,type="lag",fill=0),
-                              Prev_DD=shift(Y_DefToDef,n=1,type="lag",fill=0),
-                              Prev_DS=shift(Y_DefToSet,n=1,type="lag",fill=0)
-)]
-
-# - Merge the previous months transition rates
-BR_Train<-merge(BR_Train, Previous,by="Date",all.x=TRUE)
-
-
-
-# --- 2. Beta Regression Validation Set
-# --- Create Target Variables, i.e., transition rates
-# - From performing
-Targets_P<-datCredit_valid[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                               Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                               Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                               Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
-                           by=list(Date)]
-# - From default
-Targets_D<-datCredit_valid[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                              Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                              Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                              Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
-                           by=list(Date)]
-
-# - Keep relevant features
-Features_Valid<-datCredit_valid[!duplicated(Date),]%>%select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
-Features_Valid[,Date_Origination:=NULL]
-
-# - Engineer more portfolio level features
-Feature_Eng<-datCredit_valid[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
-                                   Ave_Margin=mean(InterestRate_Margin,na.rm=TRUE),
-                                   g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
-                                   g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
-                                   g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
-
-# - Merge into one set that will be used to train all the BR-models
-BR_Valid<-merge(Features_Train, Feature_Eng,by="Date",all.x=TRUE)
-BR_Valid<-merge(BR_Valid, Targets_P,by="Date",all.x=TRUE)
-BR_Valid<-merge(BR_Valid, Targets_D,by="Date",all.x=TRUE)
-
-# - Create Previous transition rate Covariates
-Previous<-BR_Valid[,list(Date,Prev_PD=shift(Y_PerfToDef,n=1,type="lag",fill=0),
-                         Prev_PP=shift(Y_PerfToPerf,n=1,type="lag",fill=0),
-                         Prev_PS=shift(Y_PerfToSet,n=1,type="lag",fill=0),
-                         Prev_DP=shift(Y_DefToPerf,n=1,type="lag",fill=0),
-                         Prev_DW=shift(Y_DefToWO,n=1,type="lag",fill=0),
-                         Prev_DD=shift(Y_DefToDef,n=1,type="lag",fill=0),
-                         Prev_DS=shift(Y_DefToSet,n=1,type="lag",fill=0)
-)]
-
-# - Merge the previous months transition rates
-BR_Valid<-merge(BR_Valid, Previous,by="Date",all.x=TRUE)
-
-
-
-
-
-# - Pack away the BR training & validation set
-pack.ffdf(paste0(genPath, "BR_Training"), BR_Train)
-pack.ffdf(paste0(genPath, "BR_Validation"), BR_Valid); gc()
 
 proc.time() - ptm # IGNORE: elapsed runtime
