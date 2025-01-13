@@ -37,6 +37,7 @@
 # NOTE: This script predominantly comes from another project (SICR-modelling), 
 # but with a few changes to create more features, and enriched by the "C-FLI" project (Botha2020)
 # =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 

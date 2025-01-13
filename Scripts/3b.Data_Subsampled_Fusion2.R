@@ -1,7 +1,7 @@
 # ========================== SUBSAMPLED RESAMPLING & DATA FUSION FOR PD MODELS =========================
 # Subsampling and resampling data prior to fusing the input space towards PD-modelling
 # ------------------------------------------------------------------------------------------------------
-# PROJECT TITLE: Default survival modelling
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION:
@@ -29,7 +29,8 @@
 #   - datCredit_train | Training set, created from subsampled set
 #   - datCredit_valid | Validation set, created from subsampled set
 # ------------------------------------------------------------------------------------------------------
-
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics', though
+# was amended for the current context.
 
 
 

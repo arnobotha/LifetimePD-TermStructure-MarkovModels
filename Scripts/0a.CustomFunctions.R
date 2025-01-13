@@ -1,13 +1,14 @@
-# ============================== CUSTOM FUNCTIONS ==============================
+# =================================== CUSTOM FUNCTIONS ==================================
 # Defining custom functions used across various projects
-# ------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# ---------------------------------------------------------------------------------------
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
 
 # DESCRIPTION:
 # This script defines various functions that are used elsewhere in this project
 # or, indeed, used across other projects. Functions are grouped thematically.
-# ==============================================================================
+# =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 
@@ -18,8 +19,10 @@
 
 
 
+
 # -------- Utility functions
-# - Mode function (R doesn't have a built-int one)
+
+# -- Mode function (R doesn't have a built-int one)
 getmode <- function(v) {
   uniqv <- unique(v);
   # discard any missingness
@@ -27,7 +30,8 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-# - Memory function using 'gdata' package
+
+# -- Memory function using 'gdata' package
 getMemUsage <- function(limit=1000){
   require(gdata); require(scales)
   # - Get list of significant object sizes occupied in memory, order ascendingly
@@ -42,9 +46,10 @@ getMemUsage <- function(limit=1000){
 
 
 
-# -------- Cleaning functions
 
-# Custom function that curates a main vector [x] to equal the previous/most-recent non-
+# -------- Cleaning functions (Missing/extreme value treatments)
+
+# -- Custom function that curates a main vector [x] to equal the previous/most-recent non-
 # missing element in a given vector
 imputeLastKnown <- function (x) {
   # -- Testing purposes
@@ -66,8 +71,8 @@ imputeLastKnown <- function (x) {
 }
 
 
-# Custom function that curates a main vector [x] where x[1] is missing.
-# This is achieve by finding the first non-missing element and back-filling that value
+# -- Custom function that curates a main vector [x] where x[1] is missing.
+# This is achieved by finding the first non-missing element and back-filling that value
 imputeFirstKnown <- function(x) {
   # -- Testing purposes
   # x <- c(NA, NA, 2,3,4)
@@ -81,7 +86,7 @@ imputeFirstKnown <- function(x) {
 }
 
 
-# Custom Function by which to adjust for inflation
+# -- Custom Function by which to adjust for inflation
 # Assumes a monthly macroeconomic dataset [macro_data_hist] to exist with [Date_T] and [Inflation] fields
 adjInflation <- function(g_start, g_stop) {
   compFact <- macro_data_hist[Date_T >= g_start & Date_T <= g_stop, list(Factor = prod(1 + (Inflation/100)/12))]
@@ -89,7 +94,7 @@ adjInflation <- function(g_start, g_stop) {
 }
 
 
-# -  Adjusting for inflation (Robust version that accepts a macroeconomic dataset)
+# -- Adjusting for inflation (Robust version that accepts a macroeconomic dataset)
 # Generating an inflation factor for a given series of yearly inflation growth rates
 # Input:  [datMacro]: The dataset containing the yearly inflation growth rate
 #         [time]: Name of the time/date variable in [datMacro]
@@ -109,19 +114,41 @@ adjInflation_MV <- function(datMacro, time, Inflation_Growth, g_start, g_stop) {
 # rm(datMV, test); gc()
 
 
-# - Function to convert NaN-values or infinite values within a vector to the given value 
+# -- Function to convert NaN-values or infinite values within a vector to the given value 
 Treat_NaN <- function(vec, replaceVal=0) {
   vec[is.nan(vec) | is.infinite(vec)] <- replaceVal
   return (vec)
 }
 
 
+# -- Function for applying Winsorisation for dealing with outliers
+# All values above (and or below) a certain quantile(s) are assigned the value(s) of that specific quantile(s).
+# Input: [x]: A real valued vector
+# Output: A vector containing values betweem the specified lower and upper quantile of the input vector.
+winsorise <- function(x,lower_quant=0.025,upper_quant=0.975){
+  # --- Testing purposes
+  #x <- 1560*rbeta(10000, shape1=1, shape2=20); hist(x)
+  #lower_quant <- 0.05; upper_quant <- 0.90
+  # - Obtainnig the upper and lower quantiles of the distribution and creating indicator variables for applying the winsorisation
+  wins_ind_low <- as.numeric(x<quantile(x,lower_quant))
+  wins_ind_up <- as.numeric(x>quantile(x,upper_quant))
+  wins_ind_bet <- abs(wins_ind_low + wins_ind_up-1)
+  
+  # - Applying the winsorisation
+  z <- wins_ind_bet*x + wins_ind_low*quantile(x,lower_quant) + wins_ind_up*quantile(x,upper_quant)
+  
+  # - Returning the winsorised vector
+  return(z)
+  
+  #hist(z); rm(x,z,lower_quant,upper_quant,wins_ind_low,wins_ind_up,wins_ind_bet)
+}
 
 
 
 
-# -------------------------- INTERLEAVING FUNCTION ------------------------------
-# - Coalescing function to facilitate data fusion between two given vectors
+# -------- Interleaving & Interpolation functions
+
+# -- Coalescing function to facilitate data fusion between two given vectors
 # Input: two scalar values (x & y) that may have selective missingness in either side (left: x; right: y)
 # Output: Returns the non-missing side. If both are non-missing, then returns the (given) preference.
 interleave <- function(x,y, na.value = as.integer(NA), pref='X') {
@@ -136,10 +163,7 @@ interleave <- function(x,y, na.value = as.integer(NA), pref='X') {
 }
 
 
-
-
-# ------------------------- INTERPOLATION FUNCTION -----------------------------
-# - Missing value Treatment: Interpolate the values between two known non-missing points
+# -- Missing value Treatment: Interpolate the values between two known non-missing points
 # Assumes all missingness are 'encased' between two known points.
 # Input: [given]: a time series possibly with some missing values for which we like to interpolate;
 #     [shouldRollBackward]: If the first element is missing, should we try to fix this by 'back-interpolating'
@@ -287,21 +311,30 @@ interPol <- function(given, shouldRollForward=T, shouldRollBackward=T, SilenceWa
 
 
 
+# -------- Scaling functions
 
-# --------------------------- SCALING FUNCTIONS --------------------------------
-# - two scaling functions to standardize given vectors unto a uniform scale
+# -- A few scaling functions to standardize given vectors unto a uniform scale
 # Input: [given]: a real-valued vector
 # Output: standardized vector
+### NOTE: the shifting parameter can be useful when the given vector contains excessive zero-values.
 
 # 1) Range-based scaler | vectors will have equal ranges (min-max)
-scaler <- function(given){
-  output <- (given - min(given,na.rm=T)) / (max(given, na.rm=T) - min(given, na.rm=T))
+scaler <- function(given, shift=TRUE){
+  if (shift==T){
+    output <- (given - min(given,na.rm=T)) / (max(given, na.rm=T) - min(given, na.rm=T))
+  } else {
+    output <- (given) / (max(given, na.rm=T) - min(given, na.rm=T))
+  }
   return(output)
 }
 # 2) Z-score/normalized scaler | vectors should roughly be N(0,1) distributed
-scaler.norm <- function(given){
+scaler.norm <- function(given, shift=TRUE){
   # (given <- as.vector(subset(macro_data_hist1, Scenario=="Baseline")$DebtToIncome_Rate)) # for testing
-  output <- (given - mean(given,na.rm=T)) / (sqrt(var(given,na.rm=T)))
+  if (shift==T){
+    output <- (given - mean(given,na.rm=T)) / (sqrt(var(given,na.rm=T)))
+  } else {
+    output <- (given) / (sqrt(var(given,na.rm=T)))
+  }
   # check for NaN values (which can result if there is 0 variance)
   if (all(is.na(output))) {
     # just assign the central value, in this case, 0
@@ -313,47 +346,11 @@ scaler.norm <- function(given){
 
 
 
-# ------------------------- SICR-DEFINITION FUNCTION ---------------------------
-# Function that defines a SICR-event for a given loan's history
-# Input: [delinq]: g1-measured delinqeuncy vector (number of payments in arrears) at every time t
-#     [d]: threshold for g1-mesaure beyond which a SICR-event is said to have occured at t
-#     [s]: "stickiness" of the delinquency test, or the number of consecutive periods for which
-#         g1(t) >= d must hold before a SICR-event is said to occur
-SICR_flag <- function(delinq, d, s) {
-  
-  # Prepare vectors into a mini data.table for easier wrangling
-  dat <- data.table(delinq)
-  
-  # Main delinquency test at every time period
-  dat[, Test0 := ifelse(delinq >= d, 1, 0)]
-  
-  # Second condition: assessing whether this delinquency threshold was met for (s-1) lagged periods
-  varList <- c('Test0')
-  if (s > 1) {
-    for (l in 1:(s-1)) {
-      dat[, paste0('Test',l) := shift(Test0, n=l, type="lag")]
-      
-      # add newly created variable to a list
-      varList <- c(varList, paste0('Test',l))
-    }
-  }
-  
-  # Sum the number of lagged flags per row, used for final logic test
-  dat[, Test_Sum := rowSums(.SD, na.rm = T), .SDcols=varList]
-  
-  # Finally, test whether g_0(t) >= d for at least s number of periods
-  # This is achieved by equating summed lagged flags and evaluating against s >=1
-  dat[, Sticky := ifelse(Test_Sum == s, 1, 0)]  
-  
-  # return SICR-flag vector
-  return(dat$Sticky)
-}
+# -------- Transformation functions
 
-
-
-
-# ------------------------- YEO-JOHNSON TRANSFORMATION ---------------------------
-# A function for applying Yeo-Johnson transformation to a given vector. The optimal transformation is selected based on either a normal log-likelihood
+# -- Yeo-Johnson transformation function
+# A function for applying Yeo-Johnson transformation to a given vector. The optimal transformation is selected based 
+# on either a normal log-likelihood
 # function of the transformed vector. The optimal transformation is thus chosen based on the best approximation to normality.
 # Input: [x]: a real-valued vector
 # Output:vector transformed with an optimal power transformation
@@ -408,7 +405,6 @@ transform_yj <- function(x, bound_lower=-2, bound_upper=2, lambda_inc=0.5, verbo
   return(y)
   #rm(x,y,bound_lower,bound_upper, verbose, plotopt, plotqq, lambda1, lambda2, lambda_search, norm_test)
 }
-
 # Some more testing conditions
 # transform_yj(x=1560*rbeta(10000, shape1=1, shape2=20), bound_lower=4, plotopt=TRUE)
 # transform_yj(x=1560*rbeta(10000, shape1=1, shape2=20),bound_lower=-2,bound_upper=2,lambda_inc=0.1, plotopt=TRUE, plotqq=TRUE, norm_test=TRUE)
@@ -416,7 +412,8 @@ transform_yj <- function(x, bound_lower=-2, bound_upper=2, lambda_inc=0.5, verbo
 
 
 
-# ------------------------- VARIABLE IMPORTANCE FOR LOGIT MODELS ---------------------------
+# -------- Variable Importance Measures for Logit Models
+
 # A function for measuring and rank-ordering the variable "importance" given a logit model
 # Three such measures are implemented:
 # 1) standardised coefficients via refitting on Z-scored input space [stdCoef_ZScores]
@@ -457,7 +454,7 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
   coefficients_sig_data_index <- rep(0,coefficients_summary[,.N]) # Index showing if the variable in the model is significant or not
   coefficients_sig_data <- rep(0,coefficients_summary[,.N]) # Names of the significant variable's associated column name in the training dataset
   sig_level <- ifelse(is.na(sig_level),1,sig_level) # The significance level against which each variable must be tested
- 
+  
   # --- 1. Filtering for significant variables
   k <- 1 # Counter
   for (i in 1:length(coefficients_data$names)){ # Main loop - looping through all the relevant variables in the training dataset
@@ -519,26 +516,26 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
     }
     # Adjusting the model formula
     model_form_new <- as.formula(substr(model_form_new, 1, nchar(model_form_new)-3))
-
+    
     # Re-training the model on the scaled data
     suppressWarnings( logit_model <- glm(model_form_new, data=datTrain2, family="binomial") )
     
     # Calculating importance measure and preparing result set
     results$data[,Value := data.table(names=names(logit_model$coefficients[which(names(logit_model$coefficients) %in% coefficients_sig_model)]),
-                                                Std_Coefficient=logit_model$coefficients[which(names(logit_model$coefficients) %in% coefficients_sig_model)]) %>% arrange(names) %>% subset(select="Std_Coefficient")]
+                                      Std_Coefficient=logit_model$coefficients[which(names(logit_model$coefficients) %in% coefficients_sig_model)]) %>% arrange(names) %>% subset(select="Std_Coefficient")]
     results$Method <- "Standardised coefficients using Z-scores"
     
   } else if (method=="stdCoef_Goodman") { 
     # -- Variable importance based on Goodman-standardised coefficients
     # See Menard2011; https://www.jstor.org/stable/41290135)
     # B = \beta / sd(\beta)
-
+    
     # Calculating importance measure and preparing result set
     results$data <- copy(coefficients_summary)[names %in% coefficients_sig_model]
     results$data[,Value:=coefficient/se] # Compute the importance measure
     results$data[,`:=`(coefficient=NULL,se=NULL, sig=NULL)]; colnames(results$data) <- c("Variable", "Value")
     results$Method <- "Standardised coefficients: Goodman"
-
+    
   } else if (method=="stdCoef_Menard"){ 
     # -- Variable importance based on Menard-standardised coefficients from Menard2011; https://www.jstor.org/stable/41290135)
     # B = \beta . s_x . R / s_{logit( \hat{Y} )}, where s_x is the standard deviation of X, R is the Pearson correlation between observed values Y and 
@@ -573,13 +570,13 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
     } else if (Menard_Method=="R-Squared"){
       r2 <- coefDeter_glm(logit_model)[[1]]; r2 <- as.numeric(substr(r2,1,nchar(r2)-1)) # Converting the character output to numeric  
     }
-	
+    
     # Computing the variable importance
     results$data$Value <- coefficients_summary$coefficient[coefficients_sig_data_index==1] * r2 * (sd_x/sd_y)
     
     # Stamping the results dataset with the chosen method for variable importance
     results$Method <- "Standardised Coefficients: Menard"
-  
+    
   } else {stop(paste0('"', method,'" is not supported. Please use either "stcCoef_ZScores", "stdCoef_Goodman", or "stdCoef_Menard" as method.'))}# if else (method)
   
   # - Ranking the variables according to their associated importance measure values
@@ -605,14 +602,14 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
     
     # Generic variable importance plot
     results$plots[["Ranking"]] <- ggplot(datGraph, aes(x=reorder(Variable, Value_Abs))) + theme_minimal() + theme(text=element_text(family=chosenFont)) +  # Re-order by [Variable] because [Variable_Short] yields incorrect orderings
-       geom_col(aes(y=Value_Abs, fill=Value_Abs)) + geom_label(aes(y=sumVarImport*0.05, label=paste(percent(Contribution, accuracy=0.1)), fill=Value_Abs), family=chosenFont) + 
-       annotate(geom="text", x=datGraph[.N, Variable], y=datGraph$Value_Abs[1]*0.75, label=paste0("Variable Importance (sum): ", comma(sumVarImport, accuracy=0.1)), family=chosenFont, size=3) + 
-       coord_flip() + scale_fill_distiller(palette=colPalette, name="Absolute value", direction=colPaletteDir) +
-       scale_colour_distiller(palette=colPalette, name="Absolute value", direction=colPaletteDir) + 
-       scale_x_discrete(labels =datGraph$Variable_Short[order(datGraph$Value_Abs)]) + # Use [Variable_Short] for the x-axis labeling; Ensure ordering matches the absolute variable importance values
-       labs(x="Variable name", y=results$Method)
-   
-      
+      geom_col(aes(y=Value_Abs, fill=Value_Abs)) + geom_label(aes(y=sumVarImport*0.05, label=paste(percent(Contribution, accuracy=0.1)), fill=Value_Abs), family=chosenFont) + 
+      annotate(geom="text", x=datGraph[.N, Variable], y=datGraph$Value_Abs[1]*0.75, label=paste0("Variable Importance (sum): ", comma(sumVarImport, accuracy=0.1)), family=chosenFont, size=3) + 
+      coord_flip() + scale_fill_distiller(palette=colPalette, name="Absolute value", direction=colPaletteDir) +
+      scale_colour_distiller(palette=colPalette, name="Absolute value", direction=colPaletteDir) + 
+      scale_x_discrete(labels =datGraph$Variable_Short[order(datGraph$Value_Abs)]) + # Use [Variable_Short] for the x-axis labeling; Ensure ordering matches the absolute variable importance values
+      labs(x="Variable name", y=results$Method)
+    
+    
     # Show plot to current display device
     print(results$plots[["Ranking"]])
     
@@ -621,7 +618,7 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
     ggsave(results$plots[["Ranking"]] , file=plotName, width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white")
     
   } # if
-
+  
   # - Return results
   return(results)
   # rm(logit_model, datTrain1, datTrain2, method, impPlot, coefficients_sig_model, coefficients_sig_data, sumVarImport, limitVars, coefficients_data, coefficients_sig_data, coefficients_summary, coefficients_sig_model_level)
@@ -637,9 +634,7 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
 
 
 
-
-# ------------------------- DIAGNOSTIC FUNCTIONS FOR LOGIT MODELS ---------------------------
-
+# -------- Diagnostic functions for Logit Models
 
 # --- Pseudo R^2 measures for classifiers
 # Calculate a pseudo coefficient of determination (R^2) \in [0,1] for glm assuming binary
@@ -671,10 +666,10 @@ coefDeter_glm <- function(model) {
   } else if (!is.null(data$`(weights)`) & length(data$`(weights)` > 0)) {
     weights <- data$`(weights)`
   } else weights <- NULL
- data <- data[, 1, drop=F]; names(data) <- "y"
- nullCall <- call(calltype.char, formula = as.formula("y ~ 1"), data = data, weights = weights, family = model$family, 
-                     method = model$method, control = model$control, offset = model$offset)
- L_base <- logLik(eval(nullCall)) # log-likelihood of the null model, ln(L_0)
+  data <- data[, 1, drop=F]; names(data) <- "y"
+  nullCall <- call(calltype.char, formula = as.formula("y ~ 1"), data = data, weights = weights, family = model$family, 
+                   method = model$method, control = model$control, offset = model$offset)
+  L_base <- logLik(eval(nullCall)) # log-likelihood of the null model, ln(L_0)
   
   # -- Implement the McFadden pseudo R^2 measure from McFadden1974, R^2 = 1 - log(L_M)/log(L_0)
   # NOTE: null deviance L_0 plays an analogous role to the residual sum of squares in linear regression, therefore
@@ -683,7 +678,7 @@ coefDeter_glm <- function(model) {
   # https://stats.stackexchange.com/questions/8511/how-to-calculate-pseudo-r2-from-rs-logistic-regression
   coef_McFadden <- 1 - model$deviance / model$null.deviance
   if ( !all.equal(coef_McFadden, as.numeric(1 - (-2*L_full)/(-2*L_base) ) ) ) stop("ERROR: Internal function error in calculating & verifying McFadden's pseudo R^2-measure")
-
+  
   
   # -- Implement Cox-Snell R^2 measure from Cox1983, which according to Allison2013 is more a "generalized" R^2 measure than pseudo,
   # given that its definition is an "identity" in normal-theory linear regression. Can therefore be used to other regression settings using MLE,
@@ -717,8 +712,6 @@ coefDeter_glm <- function(model) {
 # logit_model <- glm(default ~ student + balance + income, data=datTrain_simp, family="binomial")
 # coefDeter_glm(logit_model)
 ### RESULTS: candidate is 46% (McFadden) better than null-model in terms of its deviance
-
-
 
 
 # --- Residual Deviance measures
@@ -770,7 +763,7 @@ resid_deviance_glm <- function(model, err_Median = 0.025, err_quantiles = 0.05, 
   # see https://stackoverflow.com/questions/9476475/how-to-produce-leverage-stats
   inf_degree <- NROW(h[h> (3 * mean(h))]) / NROW(h)
   inf_degree_max <- max(h) / mean(h)
-
+  
   # 4) standardised/studentized Pearson residuals: adjusting the Pearson residual for leverage (or "hat values")
   # NOTE: These residuals are usually standard normally distributed, which can be a useful diagnostic in and of itself; see Agresti2002
   rs <- r / sqrt(1 - h) # or simply rs <- rstandard(m, type = "pearson") 
@@ -790,14 +783,14 @@ resid_deviance_glm <- function(model, err_Median = 0.025, err_quantiles = 0.05, 
   cat("Residual deviance (difference between observed and predicted; smaller = better):", comma(sum(d^2)), '\n---------\n')
   # [DIAGNOSTIC] Absolute values of min and max percentiles <= 3 ?
   cat( (abs(d_aggr[1]) <= 3 & abs(d_aggr[5]) <= 3) %?% 'SAFE: Min/max residual deviances are within expected bounds (<=3 in absolute value); model fit is adequate.\n' %:%
-    'WARNING: Min/max residual deviances are outside expected bounds (<=3 in absolute value); model fit is somewhat strained.\n')
+         'WARNING: Min/max residual deviances are outside expected bounds (<=3 in absolute value); model fit is somewhat strained.\n')
   # [DIAGNOSTIC] median residual deviance close to 0 ?
   cat( (abs(d_aggr[3]) <= err_Median) %?% 
          paste0('SAFE: Median residual deviance (', comma(abs(d_aggr[3]), accuracy=0.01), ') is sufficiently close to zero; model fit is adequate.\n') %:%
-    paste0('WARNING: Median residual deviance (', comma(abs(d_aggr[3]), accuracy=0.01), ') is not zero; model fit is somewhat strained.\n') )
+         paste0('WARNING: Median residual deviance (', comma(abs(d_aggr[3]), accuracy=0.01), ') is not zero; model fit is somewhat strained.\n') )
   # [DIAGNOSTIC] 1st and 3rd percentile is relatively close to one another, indicating a symmetric distribution ?
   cat( (abs(d_aggr[2]) - abs(d_aggr[4]) <= err_quantiles) %?% 'SAFE: 1st/3rd quantiles of residual deviances are sufficiently close to each in absolute value; model fit is adequate.\n---------\n' %:%
-    'WARNING: 1st/3rd quantiles of residual deviances differ substantially from each other in absolute value; model fit is somewhat strained.\n---------\n' )
+         'WARNING: 1st/3rd quantiles of residual deviances differ substantially from each other in absolute value; model fit is somewhat strained.\n---------\n' )
   # [DIAGNOSTIC] Degree to which hat values (leverage scores) exceed a common rule of thumb (> 3 x mean(h))
   
   # -- 3. Graph distritubion of residuals
@@ -818,8 +811,6 @@ resid_deviance_glm <- function(model, err_Median = 0.025, err_quantiles = 0.05, 
 # distributional shape somewhat skew since abs(1st) != abs(3rd) quantiles
 
 
-
-
 # --- Matthews Correlation Coefficient 
 # This function gives the Matthews Correlation Coefficient, as calculated from the confusion matrix entries
 # Input: 1) Actual values for a classifier problem in vector form, e.g., [1,1,0,1,0,0]
@@ -828,7 +819,7 @@ resid_deviance_glm <- function(model, err_Median = 0.025, err_quantiles = 0.05, 
 # Output: Matthews Correlation Coefficient
 
 Get_MCC<-function(Actual, Predicted, Cutoff=0.5){
-
+  
   # - Safety Check for NA's
   if(anyNA(c(Actual,Predicted))){
     stop("Input fields are not allowed NA values, exiting...")
@@ -880,7 +871,6 @@ Get_MCC<-function(Actual, Predicted, Cutoff=0.5){
   
   return(MCC)
 }
-
 
 
 # --- AUC By Date Function 
@@ -935,11 +925,11 @@ AUC_overTime<-function(DataSet, DateName, Target, Predictions){
 
 Amt_Missing<-function(Model_Formula, DataSet){
   # - Safety Check if Model_Formula is of class "formula"
-    if(class(Model_Formula)!="formula"){
-      stop("Model_Formula should be of class formula.\n    Tip: use as.formula() function to create formula before fitting a model
+  if(class(Model_Formula)!="formula"){
+    stop("Model_Formula should be of class formula.\n    Tip: use as.formula() function to create formula before fitting a model
       or alternatively use formula() on a saved model object, i.e., formula(Model). \n")
-    }
-    
+  }
+  
   # - Obtain target and input variables from provided formula
   vInputs<-labels(terms(Model_Formula))
   
@@ -959,8 +949,6 @@ Amt_Missing<-function(Model_Formula, DataSet){
 }
 
 # Amt_Missing(inputs_adv1,datCredit_train)
-
-
 
 
 # --- Wilcoxon Signed Rank Test
@@ -999,87 +987,43 @@ Wilcoxon_SR_Test<-function(Actuals, Expected, Alpha=0.05){
 }
 
 
+# -------- Kolmogorov-Smirnov Discrimination Test
+# Conduct two-sample Kolmogorov-Smirnov test of score CDFs between class subpopulations
+### INPUTS: 
+# - class0: probability score distribution within class 0
+# - class1: probability score distribution within class 1
+### OUTPUTS: results from KS-test, along with interpretation using rules of thumb
 
-
-# ------------------------- Generalised Youden Index Function ---------------------------
-# - This function runs an optimisation procedure to find the Generalised Youden Index for a trained model.
-### INPUT:
-# - Trained_Model: the trained classifier for which you want to obtain the optimal cutoff p_c
-# - Train_DataSet: The training dataset (in datatable format) which will be used to find p_c
-# - Target: Character string containing the name of the target variable (target variable should be numeric 0/1)
-# - a: The cost multiple (or ratio) of a false negative relative to a false positive
-### OUTPUT: 
-# - The output of the optimisation procedure; i.e., the optimal cut-off p_c and other information detailing whether the 
-#   algorithm converged.
-
-Gen_Youd_Ind<-function(Trained_Model, Train_DataSet, Target, a){
-  # Trained_Model<-logitMod_Adv
-  # Train_DataSet<-datCredit_train[960000:965000,]
-  # Target<-"DefaultStatus1_lead_12_max"
-  # a<-4
+KS_discimination <- function(class0, class1, alpha=0.05) {
   
-  require(data.table, DEoptimR)
+  suppressWarnings(result <- ks.test(class0,class1))
   
-  Train_DataSet <- copy(Train_DataSet) # reserve copy so that we do not change the object outside of this scope
+  # - Decide on null hypothsis (that score distributions are identical)
+  if (result$p.value <= alpha){
+    hypoDecision <- "KS-test: null rejected"
+  } else hypoDecision <- "KS-test: null not rejected"
   
-  # - ensure given target name does not coincide with the intended name used internally in this function
-  # If not, then ensure the field doesn't already exist
-  if (Target != "Target" & "Target" %in% colnames(Train_DataSet)){
-    Train_DataSet[, Target := NULL]
-  }
+  # - Interpret K (or D) statistic as maximum deviance between cumulative distributions of each class
+  # Degree of discrimination/separateion between class
+  if (result$statistic < 0.2) {
+    KS_discrimation <- "poor"
+  } else if (result$statistic < 0.4) {
+    KS_discrimation <- "negligible"
+  } else if (result$statistic < 0.7) {
+    KS_discrimation <- "good"
+  } else KS_discrimation <- "unrealistically excellent"
   
-  # - ensure target variable is numeric (and not factor)
-  if (class(Train_DataSet[,get(Target)]) == "factor") {
-    Train_DataSet[, Target := as.numeric(levels(get(Target)))[get(Target)]]
-  } else Train_DataSet[, Target := get(Target)]
+  cat(paste0("KS-statistic: ", result$statistic, "; signifying ", KS_discrimation, " discrimination between classes.\n"))
   
-  # - Calculate Prevalence Rate q1
-  q1 <- mean(Train_DataSet$Target,na.rm=TRUE)
-  
-  # - Objective Function to be minimized (negative the function to be maximized)
-  GYI_a <- function(pc){
-    Train_DataSet[, prob_vals := predict(Trained_Model, Train_DataSet, type="response")] # Obtain predicted probabilities for the model
-    Train_DataSet[, class_vals := ifelse(prob_vals<=pc,0,1)] # Dichotomise the probability scores according to the cutoff pc
-    
-    # - Safety Check for missingness in predictions
-    if(anyNA(Train_DataSet[,list(prob_vals,class_vals)])){
-      stop("Missingness in predicted probabilities, Exit function...")
-    }
-    
-    # - Calculate the True Positive Rate & True Negative Rate given pc
-    TPR<-sum(Train_DataSet[,class_vals]==1 & Train_DataSet[,Target==1], na.rm=TRUE)/Train_DataSet[Target==1,.N]
-    TNR<-sum(Train_DataSet[,class_vals]==0 & Train_DataSet[,Target==0], na.rm=TRUE)/Train_DataSet[Target==0,.N]
-    
-    # - Clean Up the Created Input Fields
-    Train_DataSet[, prob_vals := NULL]
-    Train_DataSet[, class_vals := NULL]
-    
-    # - The function to minimize
-    -(TPR + (1-q1)/(a*q1)*TNR - 1)
-  }
-  # - Run Optimisation via a Differential Evolution algorithm
-  results <- JDEoptim(lower=0, upper=1, fn=GYI_a)
-  #optim(par=c(0,1), fn=GYI_a, lower=0, upper=1)
-  
-  return(list(cutoff=results$par, value=results$value, iterations=results$iter))
+  # - Stitch together result set
+  resultSet <- list(KS_statistic=result$statistic, KS_discrimation=KS_discrimation, KS_decision=hypoDecision)
+  return( resultSet )
 }
-# # - Unit test
-# require(ISLR); require(OptimalCutpoints); require(DEoptimR) # Robust Optimisation Tool		
-# datTrain <- data.table(ISLR::Default); datTrain[, `:=`(default=ifelse(default=="No",0,1), student=as.factor(student))]
-# datTrain[, default_fac := as.factor(default)]
-# logit_model <- glm(default ~ student + balance + income, data=datTrain, family="binomial")
-# # - optimal.cutpoints function from OptimalCutpoints
-# datTrain[, prob_vals := predict(logit_model, type="response")]
-# opti<-optimal.cutpoints(X = "prob_vals", status = "default", tag.healthy = 0, methods = "Youden", data = datTrain, ci.fit = FALSE, trace = FALSE, control = control.cutpoints(CFP=1, CFN=4, generalized.Youden=T))
-# summary(opti) # Optimal Cut-off = 0.2127908; Optimal Criterion = 6.6734234
-# # - Custom Gen_Youd_Ind function
-#Gen_Youd_Ind(logit_model,datTrain,"default",4) # Optimal Cut-off = 0.2120438; Optimal Criterion = -6.673423
-#Gen_Youd_Ind(logit_model,datTrain,"default_fac",4) # Optimal Cut-off = 0.2120438; Optimal Criterion = -6.673423
 
 
 
 
-# ------------------------------- INFORMATION MEASURES ---------------------------------
+# -------- Information Measure Functions
 # Calculates prevalences (actual + expected), Shannon entropy H(q), Cross-entropy H_q(p_1), 
 # Kullback-Leibler (KL) Divergence D_q(p_1) and Jeffrey Divergence J(q,p_1) for a binary classifier
 
@@ -1171,7 +1115,7 @@ divergences_binary <- function(datGiven, Target, TargetValue=1, Prediction, cutO
   
   # - Binary Cross-Entropy (BCE) of p relative to q | Continuous probability distributions
   H_qp <- -mean( ifelse(datGiven$Target==TargetValue,1,0) * log(datGiven$Prediction_score,base=logBase) +
-                  (1-ifelse(datGiven$Target==TargetValue,1,0)) * log(1-datGiven$Prediction_score,base=logBase), na.rm=T )
+                   (1-ifelse(datGiven$Target==TargetValue,1,0)) * log(1-datGiven$Prediction_score,base=logBase), na.rm=T )
   
   # - Kullback-Leibler (KL) divergence of p relative to q | Discrete probability distributions
   D_qp <- q1*log(q1/p1,base=logBase) + (1-q1)*log((1-q1)/(1-p1),base=logBase)
@@ -1238,41 +1182,93 @@ divergences_binary <- function(datGiven, Target, TargetValue=1, Prediction, cutO
 
 
 
-# --------------------- KOLMOGOROV-SMIRNOV DISCRIMINATION TEST ------------------------
-# Conduct two-sample Kolmogorov-Smirnov test of score CDFs between class subpopulations
-### INPUTS: 
-# - class0: probability score distribution within class 0
-# - class1: probability score distribution within class 1
-### OUTPUTS: results from KS-test, along with interpretation using rules of thumb
+# -------- Cut-off Functions for logit models
 
-KS_discimination <- function(class0, class1, alpha=0.05) {
+# -- Generalised Youden Index Function
+# - This function runs an optimisation procedure to find the Generalised Youden Index for a trained model.
+### INPUT:
+# - Trained_Model: the trained classifier for which you want to obtain the optimal cutoff p_c
+# - Train_DataSet: The training dataset (in datatable format) which will be used to find p_c
+# - Target: Character string containing the name of the target variable (target variable should be numeric 0/1)
+# - a: The cost multiple (or ratio) of a false negative relative to a false positive
+### OUTPUT: 
+# - The output of the optimisation procedure; i.e., the optimal cut-off p_c and other information detailing whether the 
+#   algorithm converged.
+
+Gen_Youd_Ind<-function(Trained_Model, Train_DataSet, Target, a){
+  # Trained_Model<-logitMod_Adv
+  # Train_DataSet<-datCredit_train[960000:965000,]
+  # Target<-"DefaultStatus1_lead_12_max"
+  # a<-4
   
-  suppressWarnings(result <- ks.test(class0,class1))
+  require(data.table, DEoptimR)
   
-  # - Decide on null hypothsis (that score distributions are identical)
-  if (result$p.value <= alpha){
-    hypoDecision <- "KS-test: null rejected"
-  } else hypoDecision <- "KS-test: null not rejected"
+  Train_DataSet <- copy(Train_DataSet) # reserve copy so that we do not change the object outside of this scope
   
-  # - Interpret K (or D) statistic as maximum deviance between cumulative distributions of each class
-  # Degree of discrimination/separateion between class
-  if (result$statistic < 0.2) {
-    KS_discrimation <- "poor"
-  } else if (result$statistic < 0.4) {
-    KS_discrimation <- "negligible"
-  } else if (result$statistic < 0.7) {
-    KS_discrimation <- "good"
-  } else KS_discrimation <- "unrealistically excellent"
+  # - ensure given target name does not coincide with the intended name used internally in this function
+  # If not, then ensure the field doesn't already exist
+  if (Target != "Target" & "Target" %in% colnames(Train_DataSet)){
+    Train_DataSet[, Target := NULL]
+  }
   
-  cat(paste0("KS-statistic: ", result$statistic, "; signifying ", KS_discrimation, " discrimination between classes.\n"))
+  # - ensure target variable is numeric (and not factor)
+  if (class(Train_DataSet[,get(Target)]) == "factor") {
+    Train_DataSet[, Target := as.numeric(levels(get(Target)))[get(Target)]]
+  } else Train_DataSet[, Target := get(Target)]
   
-  # - Stitch together result set
-  resultSet <- list(KS_statistic=result$statistic, KS_discrimation=KS_discrimation, KS_decision=hypoDecision)
-  return( resultSet )
+  # - Calculate Prevalence Rate q1
+  q1 <- mean(Train_DataSet$Target,na.rm=TRUE)
+  
+  # - Objective Function to be minimized (negative the function to be maximized)
+  GYI_a <- function(pc){
+    Train_DataSet[, prob_vals := predict(Trained_Model, Train_DataSet, type="response")] # Obtain predicted probabilities for the model
+    Train_DataSet[, class_vals := ifelse(prob_vals<=pc,0,1)] # Dichotomise the probability scores according to the cutoff pc
+    
+    # - Safety Check for missingness in predictions
+    if(anyNA(Train_DataSet[,list(prob_vals,class_vals)])){
+      stop("Missingness in predicted probabilities, Exit function...")
+    }
+    
+    # - Calculate the True Positive Rate & True Negative Rate given pc
+    TPR<-sum(Train_DataSet[,class_vals]==1 & Train_DataSet[,Target==1], na.rm=TRUE)/Train_DataSet[Target==1,.N]
+    TNR<-sum(Train_DataSet[,class_vals]==0 & Train_DataSet[,Target==0], na.rm=TRUE)/Train_DataSet[Target==0,.N]
+    
+    # - Clean Up the Created Input Fields
+    Train_DataSet[, prob_vals := NULL]
+    Train_DataSet[, class_vals := NULL]
+    
+    # - The function to minimize
+    -(TPR + (1-q1)/(a*q1)*TNR - 1)
+  }
+  # - Run Optimisation via a Differential Evolution algorithm
+  results <- JDEoptim(lower=0, upper=1, fn=GYI_a)
+  #optim(par=c(0,1), fn=GYI_a, lower=0, upper=1)
+  
+  return(list(cutoff=results$par, value=results$value, iterations=results$iter))
 }
+# # - Unit test
+# require(ISLR); require(OptimalCutpoints); require(DEoptimR) # Robust Optimisation Tool		
+# datTrain <- data.table(ISLR::Default); datTrain[, `:=`(default=ifelse(default=="No",0,1), student=as.factor(student))]
+# datTrain[, default_fac := as.factor(default)]
+# logit_model <- glm(default ~ student + balance + income, data=datTrain, family="binomial")
+# # - optimal.cutpoints function from OptimalCutpoints
+# datTrain[, prob_vals := predict(logit_model, type="response")]
+# opti<-optimal.cutpoints(X = "prob_vals", status = "default", tag.healthy = 0, methods = "Youden", data = datTrain, ci.fit = FALSE, trace = FALSE, control = control.cutpoints(CFP=1, CFN=4, generalized.Youden=T))
+# summary(opti) # Optimal Cut-off = 0.2127908; Optimal Criterion = 6.6734234
+# # - Custom Gen_Youd_Ind function
+#Gen_Youd_Ind(logit_model,datTrain,"default",4) # Optimal Cut-off = 0.2120438; Optimal Criterion = -6.673423
+#Gen_Youd_Ind(logit_model,datTrain,"default_fac",4) # Optimal Cut-off = 0.2120438; Optimal Criterion = -6.673423
 
-# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
-# ...
+
+
+
+
+
+
+
+# ------------------------- MARKOV-RELATED FUNCTIONS ----------------------------------
+
+# -- Function for estimating the Markov-related transition matrix given a dataset
 ### INPUTS: 
 # - Dataset
 ### OUTPUTS: TPM
@@ -1316,8 +1312,8 @@ Markov_TPM<-function(DataSetMC, StateSpace, Absorbing){
 # Markov_TPM(DataSetMC=datCredit_real,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
 
 
-# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
-# ...
+
+# --- Function for generating the state spell number
 ### INPUTS: 
 # - Dataset
 ### OUTPUTS: TPM
@@ -1348,7 +1344,7 @@ Calc_StateNum<-function(vMarkovStatus){
 }
 
 # --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
-# ...
+# --- Function for obtaining the previous state spell's age
 ### INPUTS: 
 # - Dataset
 ### OUTPUTS: TPM

@@ -36,6 +36,7 @@
 # -- Outputs:
 #   - datCredit_real | enriched credit dataset, fused with base macroeconomic variables
 # =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 
@@ -362,9 +363,11 @@ datCredit_real[, MarkovStatus_Future := shift(x=MarkovStatus,n=1,type="lead",fil
 setorder(datCredit_real, LoanID, Date)
 
 # - State Spell Number (state level counter)
+# Using custom function Calc_StateNum()
 datCredit_real[, StateSpell_Num := Calc_StateNum(vMarkovStatus=MarkovStatus), by = LoanID]
 
 # - Number of current spell (account level spell counter)
+# Using rleid() from data.table to generate the run-length number (of type MarkovStatus) over time
 datCredit_real[, StateSpell_Num_Total := rleid(MarkovStatus), by = list(LoanID)]
 
 # - State Spell Age

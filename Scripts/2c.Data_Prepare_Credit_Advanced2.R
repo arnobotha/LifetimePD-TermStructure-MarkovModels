@@ -39,6 +39,7 @@
 # as established 'facts' within this project.
 # Moreover, this script and the surrounding script structure is also influenced by the TruEnd-project
 # =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 

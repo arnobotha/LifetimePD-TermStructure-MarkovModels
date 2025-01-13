@@ -26,6 +26,9 @@
 # ------------------------------------------------------------------------------------------------------
 
 
+
+
+
 # ----------------- 1. Max spell number ---
 # - Confirm prepared datasets are loaded into memory
 if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"), tempPath)
@@ -85,7 +88,7 @@ rm(datAggr,datAggr2,lookup,g1);gc()
 # ------Preliminaries
 
 # - Select one record per performance spell
-datSurv <- subset(datCredit_real, PerfSpell_Counter==1 & PerfSpell_Age < 500,
+datSurv <- subset(datCredit_real, PerfSpell_Counter==1 & PerfSpell_Age <= 500,
                   select=c("LoanID","PerfSpell_Key","PerfSpell_Age", "PerfSpellResol_Type_Hist", "PerfSpell_Num", "TimeInPerfSpell")); gc()
 
 # - Group competing risks together in Resol_Type
@@ -119,7 +122,7 @@ vLabels2 <- c(paste0("a_Settlement"="Settlement (", round(Resol_Type2.props[1]*1
 
 
 # - Densities of resolution types overlaid
-(g1_Densities_Resol_Type <- ggplot(datSurv[PerfSpell_Age<=500,], aes(x=PerfSpell_Age, group=Resol_Type)) + theme_minimal() + 
+(g1_Densities_Resol_Type <- ggplot(datSurv, aes(x=PerfSpell_Age, group=Resol_Type)) + theme_minimal() + 
     labs(y=bquote(plain(Empirical~failure*' time histogram & density ')~italic(f(t))), 
          x=bquote("Performing spell ages (months)"*~italic(T[ij]))) + 
     theme(text=element_text(family=chosenFont),legend.position=c(0.785,0.2), 
@@ -138,7 +141,7 @@ vLabels2 <- c(paste0("a_Settlement"="Settlement (", round(Resol_Type2.props[1]*1
 )
 
 # - Densities of competing risks overlaid
-(g2_Densities_Resol_Type2 <- ggplot(datSurv2[PerfSpell_Age<=500,], aes(x=PerfSpell_Age, group=Resol_Type2)) + theme_bw() +
+(g2_Densities_Resol_Type2 <- ggplot(datSurv2, aes(x=PerfSpell_Age, group=Resol_Type2)) + theme_bw() +
     labs(y="", x="", title=paste0("Competing risks (", round(Resol_Type.props[3]*100, digits=1), "%)")) + 
     theme(legend.position=c(0.75,0.40), text=element_text(size=12, family="Cambria"),
           #specific for plot-in-plot

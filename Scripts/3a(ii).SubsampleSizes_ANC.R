@@ -2,7 +2,7 @@
 # Determining the effect of a wide range of subsample sizes within a resampling scheme amidst a 
 # cross-sectional modelling setup (PD-modelling)
 # ------------------------------------------------------------------------------------------------------
-# PROJECT TITLE: Classifier Diagnostics
+# PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha
 
 # DESCRIPTION:

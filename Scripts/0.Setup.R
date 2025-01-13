@@ -13,6 +13,7 @@
 #   - TruEnd.R | TruEnd-procedure and related functions
 #   - 0a.CustomFunctions | Multi-project library of custom & curated functions
 # =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 

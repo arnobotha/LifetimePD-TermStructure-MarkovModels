@@ -25,6 +25,7 @@
 #   - removed g1-measure variant of certain fields, opting only for the g0-measure
 #   - added checkpoints between default spell creation and performing spell creation
 # =======================================================================================
+### NOTE: This script originates predominantly from another project called 'ClassifierDiagnostics'
 
 
 
