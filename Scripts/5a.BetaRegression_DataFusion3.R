@@ -19,7 +19,8 @@
 #   - datCredit_valid | Validation set, created from subsampled set
 #
 # -- Outputs:
-#   - <Analytics> | Input space
+#   - datCredit_train | Training set, created from subsampled set, and amended for this technique
+#   - datCredit_valid | Validation set, created from subsampled set, and amended for this technique
 # ------------------------------------------------------------------------------------------------------
 
 
@@ -28,8 +29,8 @@
 # ------ 1. Preliminaries
 
 # - Confirm that required data objects are loaded into memory
-if (!exists('datCredit_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
-if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
+if (!exists('datCredit_train')) unpack.ffdf(paste0(genPath,"creditdata_train"), tempPath)
+if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid"), tempPath)
 
 
 # --- Technique-specific feature engineering
@@ -115,3 +116,7 @@ datCredit_valid[,Date_Origination:=NULL]
 # --- Save datasets for later consumption
 pack.ffdf(paste0(genPath, "creditdata_train_BR"), datCredit_train); gc()
 pack.ffdf(paste0(genPath, "creditdata_valid_BR"), datCredit_valid); gc()
+
+# - Cleanup
+rm(datAggr_D_train, datAggr_D_valid, datAggr_P_valid, datAggr_P_train,
+   datAggr_train, datAggr_valid)
