@@ -731,28 +731,19 @@ check2 <- subset(datCredit_smp, LoanID == unique(datCredit_smp[Target_FromP != T
                           "Mark_WO_Ind", "Target_FromP", "Target_FromD"))
 
 # - Aggregate to cohort-level and create transition rates: From Performing state
-datAggr_P <- datCredit_smp[MarkovStatus=="Perf",list(Y_PerfToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                                       Y_PerfToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                                       Y_PerfToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                                       Y_PerfToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+datAggr_P <- datCredit_smp[MarkovStatus=="Perf",list(Y_PerfToDef_Sub=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToSet_Sub=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToPerf_Sub=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                                       Y_PerfToWO_Sub=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                              by=list(Date)]
 # - Aggregate to cohort-level and create transition rates: From default state
-datAggr_D <- datCredit_smp[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
-                                                    Y_DefToSet=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
-                                                    Y_DefToPerf=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
-                                                    Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
+datAggr_D <- datCredit_smp[MarkovStatus=="Def",list(Y_DefToDef_Sub=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToSet_Sub=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToPerf_Sub=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
+                                                    Y_DefToWO_Sub=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                            by=list(Date)]
-# - Merge sets together and create lagged versions of each transition rate
+# - Merge sets together, whereafter these aggregations are merged back to the credit dataset
 datAggr <- merge(datAggr_P, datAggr_D, by="Date")
-datAggr[, Prev_PD := shift(Y_PerfToDef,n=1,type="lag",fill=0)]
-datAggr[, Prev_PP := shift(Y_PerfToPerf,n=1,type="lag",fill=0)]
-datAggr[, Prev_PS := shift(Y_PerfToSet,n=1,type="lag",fill=0)]
-datAggr[, Prev_DP := shift(Y_DefToPerf,n=1,type="lag",fill=0)]
-datAggr[, Prev_DW := shift(Y_DefToWO,n=1,type="lag",fill=0)]
-datAggr[, Prev_DD := shift(Y_DefToDef,n=1,type="lag",fill=0)]
-datAggr[, Prev_DS := shift(Y_DefToSet,n=1,type="lag",fill=0)]
-
-# - Merge aggregations back to credit dataset
 datCredit_smp <- merge(datCredit_smp, datAggr, by="Date", all.x=T); gc()
 
 # - Save fused- and enriched subsampled dataset for quick disk-based retrieval later
