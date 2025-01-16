@@ -1,5 +1,5 @@
 # ================================ BETA REGRESSION MODEL: Data Fusion 3 ================================
-# Creating features/variables that are specific to the modelling technique
+# Creating features/variables that are specific to the BR modelling technique
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -96,26 +96,29 @@ datAggr_valid[, Prev_DD := shift(Y_DefToDef,n=1,type="lag",fill=0)]
 datAggr_valid[, Prev_DS := shift(Y_DefToSet,n=1,type="lag",fill=0)]
 
 
-# -- Merge back to the credit datasets
-datCredit_train <- merge(datCredit_train, datAggr_train, by="Date", all.x=T); gc()
-datCredit_valid <- merge(datCredit_valid, datAggr_valid, by="Date", all.x=T); gc()
+# # -- Merge back to the credit datasets
+# datCredit_train <- merge(datCredit_train, datAggr_train, by="Date", all.x=T); gc()
+# datCredit_valid <- merge(datCredit_valid, datAggr_valid, by="Date", all.x=T); gc()
 
 
 # -- Retain relevant features
 # Training set
-datCredit_train <- datCredit_train[!duplicated(Date),] %>% 
+train_features <- datCredit_train[!duplicated(Date),] %>% 
   select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
 # validation set
-datCredit_valid <- datCredit_valid[!duplicated(Date),] %>% 
+valid_features <- datCredit_valid[!duplicated(Date),] %>% 
   select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
 # Remove stratifier since it will not be used; an expediency
-datCredit_train[,Date_Origination:=NULL]
-datCredit_valid[,Date_Origination:=NULL]
+train_features[,Date_Origination:=NULL]
+valid_features[,Date_Origination:=NULL]
 
+# - Merge the portfolio level features
+datAggr_train <- merge(datAggr_train, train_features, by="Date", all.x=T); gc()
+datAggr_valid <- merge(datAggr_valid, valid_features, by="Date", all.x=T); gc()
 
 # --- Save datasets for later consumption
-pack.ffdf(paste0(genPath, "creditdata_train_BR"), datCredit_train); gc()
-pack.ffdf(paste0(genPath, "creditdata_valid_BR"), datCredit_valid); gc()
+pack.ffdf(paste0(genPath, "creditdata_train_BR"), datAggr_train); gc()
+pack.ffdf(paste0(genPath, "creditdata_valid_BR"), datAggr_valid); gc()
 
 # - Cleanup
 rm(datAggr_D_train, datAggr_D_valid, datAggr_P_valid, datAggr_P_train,

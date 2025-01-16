@@ -721,6 +721,8 @@ datCredit_smp[,Target_FromD := relevel(factor(MarkovStatus_Future),ref="Def")]
 # - Reorder dataset
 datCredit_smp <- datCredit_smp %>% relocate(Mark_Perf_Ind, Mark_Def_Ind, Mark_Set_Ind, Mark_WO_Ind, Target_FromP, Target_FromD, 
                                            .after=MarkovStatus_Future)
+
+# - Some sanity checks
 check1 <- subset(datCredit_smp, LoanID == unique(datCredit_smp[MarkovStatus_Future=="W_Off", LoanID])[1],
                  select=c("LoanID", "PerfSpell_Key", "PerfSpell_Num", "Prev_Spell_Age", "PerfSpellResol_Type_Hist",
                           "MarkovStatus","MarkovStatus_Future", "Mark_Perf_Ind", "Mark_Def_Ind", "Mark_Set_Ind",
@@ -742,9 +744,19 @@ datAggr_D <- datCredit_smp[MarkovStatus=="Def",list(Y_DefToDef_Sub=sum(Mark_Def_
                                                     Y_DefToPerf_Sub=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                                     Y_DefToWO_Sub=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                            by=list(Date)]
+
 # - Merge sets together, whereafter these aggregations are merged back to the credit dataset
 datAggr <- merge(datAggr_P, datAggr_D, by="Date")
 datCredit_smp <- merge(datCredit_smp, datAggr, by="Date", all.x=T); gc()
+
+# - Other feature engineering
+Feature_Eng<-datCredit_smp[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
+                                   Ave_Margin_Aggr=mean(InterestRate_Margin,na.rm=TRUE),
+                                   g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
+                                   g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
+                                   g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
+# - Merge these aggregations back to the credit dataset
+datCredit_smp <- merge(datCredit_smp, Feature_Eng, by="Date", all.x=T); gc()
 
 # - Save fused- and enriched subsampled dataset for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_smp"), datCredit_smp); gc()
@@ -787,9 +799,8 @@ pack.ffdf(paste0(genPath, "creditdata_valid"), datCredit_valid); gc()
 
 
 # --- Clean up
-rm(varList_Cat, varList_Num, var_Info_Cat, var_Info_Num, datExcl, datExclusions,
-   stratifiers, smp_perc, smp_size, targetVar, timeVar, smp_frac,
-   ColNames, lags, datCredit_smp, dat_train_keys, datKeys_sampled)
+rm(datExclusions, smp_perc, smp_size, smp_frac,
+   ColNames, lags, datCredit_smp, dat_train_keys, datKeys_sampled, Feature_Eng)
 
 
 proc.time() - ptm # IGNORE: elapsed runtime
