@@ -593,8 +593,9 @@ plot(datCredit_smp[!duplicated(Date),InterestRate_Margin_Aggr_Med], type="b") # 
 
 
 # - Proportion of unique delinquency levels per cohort
-datCredit_smp[, g0_Delinq_1_Mean := sum(g0_Delinq==1, na.rm=T)/.N, by=list(Date)]
-datCredit_smp[, g0_Delinq_2_Mean := sum(g0_Delinq==2, na.rm=T)/.N, by=list(Date)]
+datCredit_smp[, g0_Delinq_1_Ave := sum(g0_Delinq==1, na.rm=T)/.N, by=list(Date)]
+datCredit_smp[, g0_Delinq_2_Ave := sum(g0_Delinq==2, na.rm=T)/.N, by=list(Date)]
+datCredit_smp[, g0_Delinq_3_Ave := sum(g0_Delinq==3, na.rm=T)/.N, by=list(Date)]
 cat( (( datCredit_smp[is.na(g0_Delinq_1_Mean),.N] + datCredit_smp[is.na(g0_Delinq_2_Mean),.N])==0) %?% 
        'SAFE: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have non-missing values.\n' %:% 
        'WARNING: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have missing values \n' )
@@ -609,7 +610,7 @@ plot(datCredit_smp[!duplicated(Date),g0_Delinq_2_Mean], type="b")
 
 
 # - Total outstanding balance relative to limit/principals; degree of credit leverage
-datCredit_smp[, CreditLeverage := sum(Balance, na.rm=T)/sum(Principal, na.rm=T), by=list(Date)]
+datCredit_smp[, CreditLeverage_Aggr := sum(Balance, na.rm=T)/sum(Principal, na.rm=T), by=list(Date)]
 cat( ( datCredit_smp[is.na(CreditLeverage),.N] ==0) %?% 
        'SAFE: New feature [CreditLeverage] has non-missing values.\n' %:% 
        'WARNING: New feature [CreditLeverage] has missing values \n' )
@@ -732,13 +733,13 @@ check2 <- subset(datCredit_smp, LoanID == unique(datCredit_smp[Target_FromP != T
                           "MarkovStatus","MarkovStatus_Future", "Mark_Perf_Ind", "Mark_Def_Ind", "Mark_Set_Ind",
                           "Mark_WO_Ind", "Target_FromP", "Target_FromD"))
 
-# - Aggregate to cohort-level and create transition rates: From Performing state
+# - Aggregate to cohort-level and create transition rates: From Performing state | Graphing purposes
 datAggr_P <- datCredit_smp[MarkovStatus=="Perf",list(Y_PerfToDef_Sub=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                                        Y_PerfToSet_Sub=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                                        Y_PerfToPerf_Sub=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
                                                        Y_PerfToWO_Sub=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                              by=list(Date)]
-# - Aggregate to cohort-level and create transition rates: From default state
+# - Aggregate to cohort-level and create transition rates: From default state | Graphing purposes
 datAggr_D <- datCredit_smp[MarkovStatus=="Def",list(Y_DefToDef_Sub=sum(Mark_Def_Ind, na.rm=TRUE)/.N,
                                                     Y_DefToSet_Sub=sum(Mark_Set_Ind, na.rm=TRUE)/.N,
                                                     Y_DefToPerf_Sub=sum(Mark_Perf_Ind, na.rm=TRUE)/.N,
@@ -751,10 +752,8 @@ datCredit_smp <- merge(datCredit_smp, datAggr, by="Date", all.x=T); gc()
 
 # - Other feature engineering
 Feature_Eng<-datCredit_smp[,list(OutBal_Prop=sum(Balance,na.rm=TRUE)/sum(Principal,na.rm=TRUE),
-                                   Ave_Margin_Aggr=mean(InterestRate_Margin,na.rm=TRUE),
-                                   g0_1prop=sum(g0_Delinq==1,na.rm=TRUE)/.N,
-                                   g0_2prop=sum(g0_Delinq==2,na.rm=TRUE)/.N,
-                                   g0_3prop=sum(g0_Delinq==3,na.rm=TRUE)/.N),by=list(Date)]
+                                   Ave_Margin_Aggr=mean(InterestRate_Margin,na.rm=TRUE))
+                           ,by=list(Date)]
 # - Merge these aggregations back to the credit dataset
 datCredit_smp <- merge(datCredit_smp, Feature_Eng, by="Date", all.x=T); gc()
 

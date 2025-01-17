@@ -95,26 +95,20 @@ datAggr_valid[, Prev_DW := shift(Y_DefToWO,n=1,type="lag",fill=0)]
 datAggr_valid[, Prev_DD := shift(Y_DefToDef,n=1,type="lag",fill=0)]
 datAggr_valid[, Prev_DS := shift(Y_DefToSet,n=1,type="lag",fill=0)]
 
-
-# # -- Merge back to the credit datasets
-# datCredit_train <- merge(datCredit_train, datAggr_train, by="Date", all.x=T); gc()
-# datCredit_valid <- merge(datCredit_valid, datAggr_valid, by="Date", all.x=T); gc()
-
-
 # -- Retain relevant features
 # Training set
-train_features <- datCredit_train[!duplicated(Date),] %>% 
-  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
+datAggr_train_features <- datCredit_train[!duplicated(Date),] %>% 
+  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")|contains("Ave")))
 # validation set
-valid_features <- datCredit_valid[!duplicated(Date),] %>% 
-  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")))
+datAggr_valid_features <- datCredit_valid[!duplicated(Date),] %>% 
+  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")|contains("Ave")))
 # Remove stratifier since it will not be used; an expediency
-train_features[,Date_Origination:=NULL]
-valid_features[,Date_Origination:=NULL]
+datAggr_train_features[,Date_Origination:=NULL]
+datAggr_valid_features[,Date_Origination:=NULL]
 
 # - Merge the portfolio level features
-datAggr_train <- merge(datAggr_train, train_features, by="Date", all.x=T); gc()
-datAggr_valid <- merge(datAggr_valid, valid_features, by="Date", all.x=T); gc()
+datAggr_train <- merge(datAggr_train, datAggr_train_features, by="Date", all.x=T); gc()
+datAggr_valid <- merge(datAggr_valid, datAggr_valid_features, by="Date", all.x=T); gc()
 
 # --- Save datasets for later consumption
 pack.ffdf(paste0(genPath, "creditdata_train_BR"), datAggr_train); gc()

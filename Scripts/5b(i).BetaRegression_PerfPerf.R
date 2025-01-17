@@ -36,8 +36,43 @@ if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"
 
 
 
-# ------ 2. Modelling themes
+# ------ 2. Modelling themes | Mu
+
+# --- Portfolio-level
+
+# --- Macroeconomic-level
+
+# - Unemployment: lags (which are best?)
+# asdfasdfasdf
+
+# ---  Fusion step
+# Combine insights mined from previous themes
+
+# --- Link function
+
+
+# ------ 3. Finalised input space of the model | Mu
+
+# call RolandFunction() only here on validation; not prior.
 
 
 
-# ------ 3. Finalised input space of the model
+
+
+# ------ 4. Modelling themes | Phi
+
+# --- Portfolio-level
+
+# --- Macroeconomic-level
+
+# - Unemployment: lags (which are best?)
+# asdfasdfasdf
+
+# ---  Fusion step
+# Combine insights mined from previous themes
+
+# --- Link function
+
+
+
+# ------ 5. Finalised input space of the model | Phi
