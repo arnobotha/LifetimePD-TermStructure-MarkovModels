@@ -46,6 +46,7 @@ require(survival) # for survival modelling
 require(pROC); require(ROCR) # both for conducting ROC-analyses
 require(ModelMetrics) # getting a confusion matrix
 require(DEoptimR) # Robust Optimisation Tool									
+require(betareg) # Beta regression package
 
 # for graphics
 require(ggplot2)

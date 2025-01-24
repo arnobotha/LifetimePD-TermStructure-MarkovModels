@@ -596,27 +596,27 @@ plot(datCredit_smp[!duplicated(Date),InterestRate_Margin_Aggr_Med], type="b") # 
 datCredit_smp[, g0_Delinq_1_Ave := sum(g0_Delinq==1, na.rm=T)/.N, by=list(Date)]
 datCredit_smp[, g0_Delinq_2_Ave := sum(g0_Delinq==2, na.rm=T)/.N, by=list(Date)]
 datCredit_smp[, g0_Delinq_3_Ave := sum(g0_Delinq==3, na.rm=T)/.N, by=list(Date)]
-cat( (( datCredit_smp[is.na(g0_Delinq_1_Mean),.N] + datCredit_smp[is.na(g0_Delinq_2_Mean),.N])==0) %?% 
-       'SAFE: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have non-missing values.\n' %:% 
+cat((!anyNA(datCredit_smp[,list(g0_Delinq_1_Ave,g0_Delinq_2_Ave,g0_Delinq_3_Ave)])) %?% 
+       'SAFE: New features [g0_Delinq_1_Ave], [g0_Delinq_2_Ave] and [g0_Delinq_1_Ave] have non-missing values.\n' %:% 
        'WARNING: New features [g0_Delinq_1_Mean] and [g0_Delinq_2_Mean] have missing values \n' )
-if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_1_Mean))
-plot(datCredit_smp[!duplicated(Date),g0_Delinq_1_Mean], type="b")
-if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_2_Mean))
-plot(datCredit_smp[!duplicated(Date),g0_Delinq_2_Mean], type="b")
-### RESULTS: g0_Delinq_1_Mean has mean of 0.05276 vs median of 0.04380
+if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_1_Ave))
+plot(datCredit_smp[!duplicated(Date),g0_Delinq_1_Ave], type="b")
+if (doDescribe) describe(unique(datCredit_smp$g0_Delinq_2_Ave))
+plot(datCredit_smp[!duplicated(Date),g0_Delinq_2_Ave], type="b")
+### RESULTS: g0_Delinq_1_Ave has mean of 0.05276 vs median of 0.04380
 #     bounded by [0.038, 0.10] for 5%-95% percentiles; no outliers
-# g0_Delinq_2_Mean has mean of 0.008208 vs median of 0.007571
+# g0_Delinq_1_Ave has mean of 0.008208 vs median of 0.007571
 #     bounded by [0.0055, 0.0148] for 5%-95% percentiles; no outliers
 
 
 # - Total outstanding balance relative to limit/principals; degree of credit leverage
 datCredit_smp[, CreditLeverage_Aggr := sum(Balance, na.rm=T)/sum(Principal, na.rm=T), by=list(Date)]
-cat( ( datCredit_smp[is.na(CreditLeverage),.N] ==0) %?% 
-       'SAFE: New feature [CreditLeverage] has non-missing values.\n' %:% 
-       'WARNING: New feature [CreditLeverage] has missing values \n' )
-if (doDescribe) describe(unique(datCredit_smp$CreditLeverage))
-plot(datCredit_smp[!duplicated(Date),CreditLeverage], type="b")
-### RESULTS: CreditLeverage has mean of 0.7641 vs median of 0.7555
+cat( ( datCredit_smp[is.na(CreditLeverage_Aggr),.N] ==0) %?% 
+       'SAFE: New feature [CreditLeverage_Aggr] has non-missing values.\n' %:% 
+       'WARNING: New feature [CreditLeverage_Aggr] has missing values \n' )
+if (doDescribe) describe(unique(datCredit_smp$CreditLeverage_Aggr))
+plot(datCredit_smp[!duplicated(Date),CreditLeverage_Aggr], type="b")
+### RESULTS: CreditLeverage_Aggr has mean of 0.7641 vs median of 0.7555
 #     bounded by [0.7222, 0.8167] for 5%-95% percentiles; no outliers
 
 
