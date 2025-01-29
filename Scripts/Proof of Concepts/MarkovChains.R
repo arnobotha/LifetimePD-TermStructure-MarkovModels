@@ -17,8 +17,8 @@ vecTimeSPent <- c(100, 120, 110, 90)
 # Estimate off-diagonal transition rates, i.e., how quickly exits occur from the
 # kth row (start state) to lth column (destination state) for k \ne l
 # NOTE: Lambda is used in continuous-time context in representing the instantaneous
-# transition rate of the system at t, \lambda_kl >= 0; which does not render them
-# as probabilities necessary.
+# transition rate of the system at t, \lambda_kl >= 0; 
+# which does not render them as probabilities necessary.
 # NOTE2: Lambda_kl are entries within the "generator" matrix, which is the analogue
 # of the transition matrix of a discrete-time Markov Chain.
 # NOTE3: A transition matrix will contain entries (transition probabilities) that are probabilities, whereas
