@@ -32,3 +32,6 @@ all.equal(lp, lp2) # TRUE
 (pseudoRsquared <- (cor(log(m$y/(1-m$y)), lp)) ^ 2)
 
 pseudoRsquared == m$pseudo.r.squared # TURE
+
+# - Cleanup
+rm(datTrain, ReadingSkills, pseudoRsquared, m, lp, lp2)

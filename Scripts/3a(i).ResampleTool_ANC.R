@@ -43,6 +43,7 @@ datCredit_real<-datCredit_real[,list(Date_Origination, Date, LoanID, Counter, De
 # - Overview
 cat("Nr of Loan Accounts in Dataset = ",comma(datCredit_real[!duplicated(LoanID),.N]),"\n",sep="")
 cat("Nr of observations in Dataset = ",comma(datCredit_real[,.N]),"\n",sep="")
+cat("Nr of dates in Dataset = ",comma(datCredit_real[,list(Date=unique(Date))][,.N]),"\n",sep="")
 ### RESULTS: Nr of Loan Accounts in Dataset = 650715 of which there 47 939 860 observations
 
 # - Resampling, stratification, and other general parameters
