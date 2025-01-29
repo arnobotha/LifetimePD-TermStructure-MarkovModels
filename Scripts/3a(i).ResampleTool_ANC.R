@@ -3,7 +3,7 @@
 # training and validation dataset that is representative to the population.
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha, Roland Breedt
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Roland Breedt (RB)
 
 # DESCRIPTION:
 # This ancillary & exploratory script implements a given sample size by first subsampling raw data
@@ -38,125 +38,77 @@ if (!exists('datCredit_real')) unpack.ffdf(paste0(genPath,"creditdata_final4a"),
 
 # - Only keep relevant columns for sampling analysis
 datCredit_real<-datCredit_real[,list(Date_Origination, Date, LoanID, Counter, DefaultStatus1, DefaultStatus1_lead_12_max,
-                                     MarkovStatus, MarkovStatus_Future, WOff_Ind)]
+                                     MarkovStatus, MarkovStatus_Future)]
 
-# - Confidence interval parameter
+# - Overview
+cat("Nr of Loan Accounts in Dataset = ",comma(datCredit_real[!duplicated(LoanID),.N]),"\n",sep="")
+cat("Nr of observations in Dataset = ",comma(datCredit_real[,.N]),"\n",sep="")
+### RESULTS: Nr of Loan Accounts in Dataset = 650715 of which there 47 939 860 observations
+
+# - Resampling, stratification, and other general parameters
 confLevel <- 0.95
+smp_size <- 200000 # Number of keys/loans during the subsampling step
+# Implied sampling fraction for the downsampling step
+smp_perc <- smp_size/datCredit_real[Counter==1, .N] 
+cat("Implied sampling fraction = ", round(smp_perc*100,3),"% of loan accounts","\n",sep="")
+smp_frac<-0.7 # sampling fraction during resampling step (training vs validation), after subsampling
 
 
 
 
-# ------ 2. Subsampling scheme with stratified random sampling
-# --- 0. Initial paramaterisation
+
+# ------ 2. Subsampling scheme
+
+# --- 0. Initial feasibility check of proposed stratifier: Date_Origination
+
+DatPlot <- datCredit_real[,list(NrOrig=.N),by=list(Date_Origination)]
+plot(DatPlot$Date_Origination,DatPlot$NrOrig,type="p"); rm(DatPlot)
+
+
+# --- 1. Clustered subsampling scheme with 1-way stratified random sampling (Date_Origination)
+# - Set seed for sampling
 set.seed(6,kind="Mersenne-Twister")
-n_obs<-datCredit_real[,.N]
-n_loan_acc<-datCredit_real[!duplicated(LoanID),.N]
-cat("Nr of Loan Accounts in Dataset = ",n_loan_acc,"\n",sep="")
-### RESULTS: Nr of Loan Accounts in Dataset = 650715 which makes up the 47 939 860 observations
 
-# - Testing feasibility of stratifier
-DatPlot<-datCredit_real[,list(NrOrig=.N),by=list(Date_Origination)]
-plot(DatPlot$Date_Origination,DatPlot$NrOrig,type="p")
+# - Training Key population
+# Get unique subject IDs or keys from the full dataset
+datKeys <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
 
-# --- 1. Subsampling
-# - Choose subset size (nr of borrowers)
-nr<-135000
-prop_sub<-nr/n_loan_acc # Calculate implied sampling fraction
-cat("Implied sampling fraction = ", round(prop_sub*100,3),"% of loan accounts","\n",sep="")
-### RESULTS: Implied sampling fraction = 20.746%
+# Use stratified random sampling to select at random some keys from which the training set will be populated 
+datKeys_sampled <- datKeys %>% group_by(Date_Origination) %>% slice_sample(prop=smp_perc)
 
-# - Obtain first observations of all LoanIDs
-dat_temp <- datCredit_real %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
-
-# - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys1 <- dat_temp %>% group_by(Date_Origination) %>% slice_sample(prop=prop_sub)
-
-# - Create the subset dataset
-datCredit_smp <- datCredit_real %>% subset(LoanID %in% dat_sub_keys1$LoanID)
-cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
-### RESULTS: Nr of observations in Subset = 9 566 507
+# - Obtain the associated loan records in creating the subsampled dataset
+datCredit_smp <- copy(datCredit_real %>% subset(LoanID %in% datKeys_sampled$LoanID))
+cat("Nr of observations in Subset = ",comma(nrow(datCredit_smp)),"\n",sep="")
 
 
-# --- 2. Transition Probability Matrix (TPM) Analysis
-# --- Full dataset
-round(Markov_TPM(datCredit_real)*100,3)
 
-# - Check Performing to Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_real$MarkovStatus=="Perf" & datCredit_real$MarkovStatus_Future=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 2301
 
-# --- Subsampled dataset
-round(Markov_TPM(datCredit_smp)*100,3)
 
-# - Check Performing to Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_smp$MarkovStatus=="Perf" & datCredit_smp$MarkovStatus_Future=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 461
+# ------ 3. Resampling scheme 
 
-# - Full TPM
-### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.956  0.298   0.741   0.005
-#            Def : 2.648   94.617  1.502   1.233
-#            Set : 0       0       100     0    
-#            W_O : 0       0       0       100  
-
-# - Subsample TPM
-### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.971  0.292   0.732   0.005
-#            Def : 2.649   94.638  1.461   1.252
-#            Set : 0       0       100     0    
-#            W_O : 0       0       0       100  
-
-# ------ 3. Resampling
+# - Set seed and training set proportion
 set.seed(1,kind="Mersenne-Twister")
-train_prop<-0.7
 
-# --- Obtain first observations of all LoanIDs
-dat_temp2 <- datCredit_smp %>% subset(Counter==1, c("Date", "LoanID", "Date_Origination"))
-
-# - Use stratified sampling by the origination date using the LoanID's
-dat_sub_keys2 <- dat_temp2 %>% slice_sample(prop=train_prop)
+# - Use 1-way stratified sampling by the origination date given the previously samnpled keys (loan IDs)
+dat_train_keys <- datKeys_sampled %>% group_by(Date_Origination) %>% slice_sample(prop=smp_frac)
 
 # - Create the subset dataset
-datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_sub_keys2$LoanID)
-datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_sub_keys2$LoanID))
-cat("Nr of observations in Training Set = ",nrow(datCredit_train),"\n",sep="")
-cat("Nr of observations in Validation Set = ",nrow(datCredit_valid),"\n",sep="")
-### RESULTS: Nr of observations in the training set = 6 416 906
-#         :  Nr of observations in the validation set = 3 171 753
+datCredit_train <- datCredit_smp %>% subset(LoanID %in% dat_train_keys$LoanID)
+datCredit_valid <- datCredit_smp %>% subset(!(LoanID %in% dat_train_keys$LoanID))
 
-# - Check if split was done successfully | should be TRUE
-((datCredit_train[,.N]+datCredit_valid[,.N]) == datCredit_smp[,.N])
+# - [SANITY CHECK] Ensuring that the resampling scheme reconstitutes the full (subsampled) dataset
+cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SAFE: Resampling scheme implemented successfully\n" %:%
+       "WARNING: Resampling scheme not implemented successfully.\n")
+cat("Nr of observations in Training Set = ",comma(datCredit_train[,.N]),"\n",sep="")
+cat("Nr of observations in Validation Set = ",comma(datCredit_valid[,.N]),"\n",sep="")
 
 # - Actual proportion of the training set
 datCredit_train[Counter==1,.N]/datCredit_smp[Counter==1,.N]*100
-### RESULTS: training set consists of 67% of the observations from the subsampled set
+### RESULTS: training set consists of 67% of the loans from the subsampled set
 
-# - Training dataset TPM
-round(Markov_TPM(datCredit_train)*100,3)
-# - Validation dataset TPM
-round(Markov_TPM(datCredit_valid)*100,3)
 
-# - Train TPM
-### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.975  0.293   0.727   0.005
-#            Def : 2.660   94.613  1.470   1.257
-#            Set : 0.000   0.000   100.00  0.000
-#            W_O : 0       0       0       100  
 
-# - Validation TPM
-### RESULTS:       Perf    Def     Set     W_O  
-#            Perf: 98.962  0.291   0.742   0.005
-#            Def : 2.628   94.687  1.444   1.241
-#            Set : 0.000   0.000   100.0   0.000
-#            W_O : 0.000   0.000   0.000   100.0
 
-# - Check Performing to Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_train$MarkovStatus=="Perf" & datCredit_train$MarkovStatus_Future=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 311
-
-# - Check Performing to Write-Off transition for a sufficient number of transitions
-cat("Nr of performing to write-off transitions in the full dataset = ",sum(datCredit_valid$MarkovStatus=="Perf" & datCredit_valid$MarkovStatus_Future=="W_Off"),"\n",sep="")
-### RESULTS: Transitions = 150
 
 # ------ 4. Graphing event rates over time given resampled sets
 # - Check representatives | dataset-level proportions should be similar
@@ -198,8 +150,8 @@ chosenFont <- "Cambria"; dpi <- 170
 smp_size<-nrow(datCredit_smp)
 vCol <- brewer.pal(9, "Set1")[c(1,5,2,4)]; size.v <- c(0.5,0.3,0.3,0.3)
 vLabel <- c("a_Full"=expression(italic(A)[t]*": Full set "*italic(D)),
-             "b_Train"=bquote(italic(B)[t]*": Training set "*italic(D)[italic(T)]~"("*.(round(train_prop*smp_size/1000))*"k)"),
-             "c_Valid"=bquote(italic(C)[t]*": Validation set "*italic(D)[italic(V)]~"("*.(round((1-train_prop)*smp_size/1000))*"k)"))
+             "b_Train"=bquote(italic(B)[t]*": Training set "*italic(D)[italic(T)]~"("*.(round(smp_frac*smp_size/1000))*"k)"),
+             "c_Valid"=bquote(italic(C)[t]*": Validation set "*italic(D)[italic(V)]~"("*.(round((1-smp_frac)*smp_size/1000))*"k)"))
 
 # - Create graph 1 (all sets)
 (g2 <- ggplot(port.aggr, aes(x=Time, y=EventRate, group=Sample)) + theme_minimal() + 
@@ -238,4 +190,5 @@ ggsave(g2, file=paste0(genFigPath, "DefaultRates_SampleRates_Subsample-", round(
 
 
 # --- Cleanup
-suppressWarnings(rm(port.aggr, port.aggr2, datGraph, datCredit, datCredit_smp, datCredit_train, datCredit_valid, g2))
+suppressWarnings(rm(port.aggr, port.aggr2, datGraph, datCredit, datCredit_smp, datCredit_train, datCredit_valid, g2, datCredit_real,
+                    datKeys, datKeys_sampled, dat_train_keys)); gc()

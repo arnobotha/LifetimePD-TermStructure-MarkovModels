@@ -3,7 +3,7 @@
 # engineering some basic features that must precede any (non-clustered) subsampling
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION:
 # This script performs the following high-level tasks:

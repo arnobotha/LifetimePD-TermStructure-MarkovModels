@@ -2,7 +2,7 @@
 # Setting up R environment, parameters, and function definitions
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION: 
 # This script installs and loads various libraries and packages, compiles all

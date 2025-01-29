@@ -2,7 +2,7 @@
 # Perform various data checks, conduct data cleaning, apply exclusions, treat missingness
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB)
 # ---------------------------------------------------------------------------------------
 # DESCRIPTION:
 # This script prepares raw imported credit data into a much more meaningful form to 

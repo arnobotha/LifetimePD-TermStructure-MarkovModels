@@ -3,7 +3,7 @@
 # create features using the macroeconomic variables that can be used in model development
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha, Esmerelda Oberholzer
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Esmerelda Oberholzer (EO)
 
 # DESCRIPTION:
 # This script prepares raw data into a more meaningful form to facilitate modelling.
