@@ -2,7 +2,7 @@
 # Apply various advanced data treatments, in preparation for applying the TruEnd-procedure
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB)
 # ---------------------------------------------------------------------------------------
 # DESCRIPTION:
 # In continuing with script 2a, this script applies the following Advanced Data Treatments:

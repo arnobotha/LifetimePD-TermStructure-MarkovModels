@@ -48,7 +48,6 @@ smp_size <- 200000 # Number of keys/loans during the subsampling step
 # Implied sampling fraction for the downsampling step
 smp_perc <- smp_size/datCredit_real[Counter==1, .N] 
 cat("Implied sampling fraction = ", round(smp_perc*100,3),"% of loan accounts","\n",sep="")
-### RESULTS: Implied sampling fraction = 20.746%
 smp_frac<-0.7 # sampling fraction during resampling step (training vs validation), after subsampling
 
 
@@ -68,7 +67,6 @@ datKeys_sampled <- datKeys %>% group_by(Date_Origination) %>% slice_sample(prop=
 # - Obtain the associated loan records in creating the subsampled dataset
 datCredit_smp <- copy(datCredit_real %>% subset(LoanID %in% datKeys_sampled$LoanID))
 cat("Nr of observations in Subset = ",nrow(datCredit_smp),"\n",sep="")
-### RESULTS: Nr of observations in Subset = 9 588 659
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_final_smp1a"), datCredit_smp)
@@ -789,8 +787,8 @@ cat( (datCredit_smp[,.N] == datCredit_train[,.N] + datCredit_valid[,.N]) %?% "SA
        "WARNING: Resampling scheme not implemented successfully.\n")
 
 # Exclude end-of-life records for which we do not have future values
-datCredit_train<-datCredit_train[MarkovStatus_Future!="NA",]
-datCredit_valid<-datCredit_valid[MarkovStatus_Future!="NA",]
+datCredit_train<-datCredit_train[!is.na(MarkovStatus_Future),]
+datCredit_valid<-datCredit_valid[!is.na(MarkovStatus_Future),]
 
 # - Save to disk (zip) for quick disk-based retrieval later
 pack.ffdf(paste0(genPath, "creditdata_train"), datCredit_train); gc()

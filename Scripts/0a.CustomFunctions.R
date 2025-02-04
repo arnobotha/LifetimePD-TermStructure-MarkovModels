@@ -2,7 +2,7 @@
 # Defining custom functions used across various projects
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha, Marcel Muller, Roland Breedt
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB), Marcel Muller (MM), Roland Breedt (RB)
 
 # DESCRIPTION:
 # This script defines various functions that are used elsewhere in this project

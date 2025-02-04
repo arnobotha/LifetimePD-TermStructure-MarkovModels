@@ -3,7 +3,7 @@
 # calculating the realised LGD from resolved default spells. TruEnd-procedure applied.
 # ---------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
-# SCRIPT AUTHOR(S): Dr Arno Botha
+# SCRIPT AUTHOR(S): Dr Arno Botha (AB)
 # ---------------------------------------------------------------------------------------
 # -- Script dependencies:
 #   - 0.Setup.R
