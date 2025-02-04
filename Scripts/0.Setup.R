@@ -47,6 +47,7 @@ require(pROC); require(ROCR) # both for conducting ROC-analyses
 require(ModelMetrics) # getting a confusion matrix
 require(DEoptimR) # Robust Optimisation Tool									
 require(betareg) # Beta regression package
+require(MASS) # Contains stepAIC function
 
 # for graphics
 require(ggplot2)
