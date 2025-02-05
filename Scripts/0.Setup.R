@@ -47,6 +47,8 @@ require(pROC); require(ROCR) # both for conducting ROC-analyses
 require(ModelMetrics) # getting a confusion matrix
 require(DEoptimR) # Robust Optimisation Tool									
 require(betareg) # Beta regression package
+require(nnet) # for multinomial logistic regression
+require(MASS) # for likelihood ratio tests dropterm() appropriate for MLR-models
 
 # for graphics
 require(ggplot2)

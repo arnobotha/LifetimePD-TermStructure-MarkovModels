@@ -647,36 +647,45 @@ varImport_logit <- function(logit_model, method="stdCoef_ZScores", sig_level=0.0
 # see https://bookdown.org/egarpor/SSS2-UC3M/logreg-deviance.html ; https://web.pdx.edu/~newsomj/cdaclass/ho_logistic.pdf; 
 # https://statisticalhorizons.com/r2logistic/
 # https://stats.stackexchange.com/questions/8511/how-to-calculate-pseudo-r2-from-rs-logistic-regression
-coefDeter_glm <- function(model) {
+coefDeter_glm <- function(model, model_base = NA) {
   
   # - Safety check
-  if (!any(class(model) == "glm")) stop("Specified model object is not of class 'glm' or 'lm'. Exiting .. ")
+  if (!any(class(model) %in% c("glm","multinom"))) stop("Specified model object is not of class 'glm' or 'lm'. Exiting .. ")
   
+  # model <- modMLR
   
   # -- Preliminaries
   require(scales) # for formatting of results
   L_full <- logLik(model) # log-likelihood of fitted model, ln(L_M)
   nobs <- attr(L_full, "nobs") # sample size, same as NROW(model$model)
-  orig_formula <- deparse(unlist(list(model$formula, formula(model), model$call$formula))[[1]]) # model formula
-  orig_call <- model$call; calltype.char <- as.character(orig_call[1]) # original model fitting call specification, used merely for "plumbing"
-  data <- model$model # data matrix used in fitting the model
-  # get weight matrix corresponding to each observation, if applicable/specified, otherwise, this defaults to just the 0/1-valued observations (Y)
-  if (!is.null(model$prior.weights) & length(model$prior.weights) > 0) {
-    weights <- model$prior.weights
-  } else if (!is.null(data$`(weights)`) & length(data$`(weights)` > 0)) {
-    weights <- data$`(weights)`
-  } else weights <- NULL
-  data <- data[, 1, drop=F]; names(data) <- "y"
-  nullCall <- call(calltype.char, formula = as.formula("y ~ 1"), data = data, weights = weights, family = model$family, 
-                   method = model$method, control = model$control, offset = model$offset)
-  L_base <- logLik(eval(nullCall)) # log-likelihood of the null model, ln(L_0)
+
+  # Fit a base/empty model if not available
+  if (any(is.na(model_base))) {
+    orig_formula <- deparse(unlist(list(model$formula, formula(model), model$call$formula))[[1]]) # model formula
+    orig_call <- model$call; calltype.char <- as.character(orig_call[1]) # original model fitting call specification, used merely for "plumbing"
+    data <- model.frame(model) # data matrix used in fitting the model (model$model)
+    # get weight matrix corresponding to each observation, if applicable/specified, otherwise, this defaults to just the 0/1-valued observations (Y)
+    if (!is.null(model$prior.weights) & length(model$prior.weights) > 0) {
+      weights <- model$prior.weights
+    } else if (!is.null(data$`(weights)`) & length(data$`(weights)` > 0)) {
+      weights <- data$`(weights)`
+    } else weights <- NULL
+    data <- data[, 1, drop=F]; names(data) <- "y"
+    nullCall <- call(calltype.char, formula = as.formula("y ~ 1"), data = data, weights = weights, family = model$family, 
+                     method = model$method, control = model$control, offset = model$offset)
+    model_base <- eval(nullCall) # fit base/null model
+  } 
+  L_base <- logLik(model_base) # log-likelihood of the null model, ln(L_0)
   
   # -- Implement the McFadden pseudo R^2 measure from McFadden1974, R^2 = 1 - log(L_M)/log(L_0)
   # NOTE: null deviance L_0 plays an analogous role to the residual sum of squares in linear regression, therefore
   # McFadden's R^2 corresponds to a proportional reduction in "error variance", according to Allison2013 (https://statisticalhorizons.com/r2logistic/)
   # NOTE2: deviance (L_M) and null deviance (L_0) within a GLM-object is already the log-likelihood since deviance = -2*ln(L_M) by definition
   # https://stats.stackexchange.com/questions/8511/how-to-calculate-pseudo-r2-from-rs-logistic-regression
-  coef_McFadden <- 1 - model$deviance / model$null.deviance
+  if (any(class(model) == "multinom") ) {
+    coef_McFadden <- 1 - (as.numeric(L_full) / as.numeric(L_base))
+  } else coef_McFadden <- 1 - model$deviance / model$null.deviance
+  
   if ( !all.equal(coef_McFadden, as.numeric(1 - (-2*L_full)/(-2*L_base) ) ) ) stop("ERROR: Internal function error in calculating & verifying McFadden's pseudo R^2-measure")
   
   
@@ -694,7 +703,11 @@ coefDeter_glm <- function(model) {
   # -- Implement Nagelkerke R^2 from Nagelkerke1991, which according to Allison2013 improves upon Cox-Snell R^2 by ensuring an upper bound of 1
   # NOTE: Cox-Snell R^2 has an upper bound of 1 - (L_0)^(2/n), which can be considerably less than 1.
   # This comes at the cost of reducing the attractive theoretical properties of the Cox-Snell R^2 
-  coef_Nagelkerke <- (1 - exp((model$deviance - model$null.deviance)/nobs))/(1 - exp(-model$null.deviance/nobs))
+  if (any(class(model) == "multinom") ) {
+    coef_Nagelkerke <- (1 - exp((model$deviance - model_base$deviance)/nobs))/(1 - exp(-model_base$deviance/nobs))
+  } else {
+    coef_Nagelkerke <- (1 - exp((model$deviance - model$null.deviance)/nobs))/(1 - exp(-model$null.deviance/nobs))
+  }
   
   
   # -- Report results
@@ -708,7 +721,7 @@ coefDeter_glm <- function(model) {
 }
 # - Unit test
 # install.packages("ISLR"); require(ISLR)
-# datTrain_simp <- data.table(ISLR::Default); datTrain[, `:=`(default=as.factor(default), student=as.factor(student))]
+# datTrain_simp <- data.table(ISLR::Default); datTrain_simp[, `:=`(default=as.factor(default), student=as.factor(student))]
 # logit_model <- glm(default ~ student + balance + income, data=datTrain_simp, family="binomial")
 # coefDeter_glm(logit_model)
 ### RESULTS: candidate is 46% (McFadden) better than null-model in terms of its deviance

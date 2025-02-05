@@ -76,6 +76,11 @@ datAggr_D_valid <- datCredit_valid[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_
 datAggr_train <- merge(datAggr_P_train, datAggr_D_train, by="Date")
 datAggr_valid <- merge(datAggr_P_valid, datAggr_D_valid, by="Date")
 
+# - Visual Plot of transition rate
+plot(datAggr_train$Date,datAggr_train$Y_PerfToDef,type="l",ylab="Transition proportions", xlab="Date",main="Performance to performance transitions over time",lwd=2)
+lines(datAggr_train$Date, datAggr_valid$Y_PerfToDef,col="orange")
+legend(x="topright",legend=c("Training","Validation"),fill=c("black","orange"))
+
 
 # -- Create lagged versions of the transition rate, which are used as input variables.
 # - Training set
