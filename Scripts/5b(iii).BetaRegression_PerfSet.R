@@ -128,7 +128,7 @@ Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.1738332 ***
 AIC(Delinq_Model) # AIC = -1877.739
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # g0_Delinq_3_Ave and CuringEvents_Aggr_Prop
-# R2 a bit lower than DefaultStatus1_Aggr_Prop_Lag
+# R2 is a bit lower than DefaultStatus1_Aggr_Prop_Lag
 
 
 # - Combining best versions of the lags towards obtaining the most parsimonious model
@@ -147,7 +147,7 @@ summary(Delinq_Model_Full)
 Delinq_Model_Full$pseudo.r.squared # Pseudo R2 = 0.3119188
 AIC(Delinq_Model_Full) # AIC = -1923.182
 ### RESULTS: The previous P to S transition rate is a good predictor for the next month's transition rate, this is likely because it informs the general level of 
-# transitions into settlement or put differently, the maturity of the loan book. Again the g0_delinq variables seem to be great options
+# transitions into settlement or put differently, the maturity of the loan book. Again the g0_delinq variables seem to be great candidate input variables
 # for modelling the transitions rate; even for transition rates other than P to D for which it was originally engineered.
 
 
@@ -214,7 +214,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.07798439 ***
 AIC(Macro_Model) # AIC = -1845.556
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_Inflation_Growth_12 and M_Inflation_Growth_9
-# R2 more than for the repo rate
+# R2 is higher than for the repo rate
 
 
 # Comparison of lags in: Debt to Income
@@ -346,7 +346,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.01189832
 AIC(Macro_Model) # AIC = -1831.349
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_RealGDP_Growth and M_RealGDP_Growth_1
-# R2 is slightly less than for the repo rate
+# R2 is slightly more than for the repo rate
 
 
 # - Combining best versions of the lags
@@ -498,6 +498,9 @@ summary(PS_BR_Full)
 PS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.4110498
 AIC(PS_BR_Full) # AIC = -1959.108
 cat("MAE = ",round(mean(abs(predict(PS_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09491%
+### RESULTS: Again, it does not seem as if the macroeconomic environment have such a big impact on the P to S transition rate, given that
+# employment growth was the only macroeconomic variable that made it to the final model. Moreover, it is plausible that something like employment growth
+# has more of an effect on settlement when compared to other macroeconomic variables such as the inflation rate.
 
 
 
@@ -545,6 +548,7 @@ Ordered_Phi_Set[p_val<0.1,]
 ### RESULTS - best inputs to phi using single factor models for its input space is
 # M_Repo_Rate, InstalmentToBalance_Aggr_Prop, M_Repo_Rate_2
 
+
 # - Start of with the 3 best phi inputs
 PS_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
                           g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
@@ -563,6 +567,9 @@ summary(PS_Phi)
 PS_Phi$pseudo.r.squared # Pseudo R2 = 0.4111419
 AIC(PS_Phi) # AIC = -1959.427
 cat("MAE = ",round(mean(abs(predict(PS_Phi,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE = 0.09501%
+### RESULTS: Modelling phi as dynamic improves the R2 slightly by 0.24%. It is observed that when we use a lot of variables as a starting point
+# for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs. All input variables
+# for modelling mu stay significant using the repo rate to model phi dynamically.
 
 
 
@@ -616,13 +623,15 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is [0.4104036, 0.4687433]
 
 # - Update link function
-PS_Final<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
+# Also remove intercept as it is no longer statistically significant
+PS_Final<-betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 +
                     g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
                     CreditLeverage_Aggr+AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|M_Repo_Rate, data=datAggr_train, link=optimal_link)
 summary(PS_Final)
-PS_Final$pseudo.r.squared # Pseudo R2 = 0.4687433
-AIC(PS_Final) # AIC = -1958.974
-cat("MAE = ",round(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09523%
+PS_Final$pseudo.r.squared # Pseudo R2 = 0.4632961
+AIC(PS_Final) # AIC = -1958.794
+cat("MAE = ",round(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09473%
+
 
 
 
@@ -642,7 +651,10 @@ plot(datAggr_valid$Date,predict(PS_Adj,datAggr_valid),type="l",col="red",lwd=2,y
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_PerfToSet),type="l")
 MAEval<-round(mean(abs(predict(PS_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_PerfToSet))),7)*100
 legend(x="topright",paste("MAE = ",MAEval,"%"))
-cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="") # MAE = 0.03802%
+cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# MAE before CD = 0.09523%; After CD = 0.09606%
-# Pseudo R2 before CD = 0.4687433; After CD = 0.6021219
+# Pseudo R2 before CD = 0.4632961; After CD = 0.599667
+
+# --- Save Model
+PS_Final<-PS_Adj
+pack.ffdf(paste0(genObjPath,"BR_P_To_S"), PS_Final)

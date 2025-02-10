@@ -103,7 +103,7 @@ Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.230083 ***
 AIC(Delinq_Model) # AIC = -1854.12
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # DefaultStatus1_Aggr_Prop_Lag_6 and DefaultStatus1_Aggr_Prop_Lag_12
-# R2 slightly lower than g0_Delinq_Any_Aggr_Prop
+# R2 lower than g0_Delinq_Any_Aggr_Prop
 
 
 # Comparison of mean delinquency levels: g0_Delinq
@@ -539,9 +539,9 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
                       NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
                       AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(PP_BR_Full)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6478077
-AIC(PP_BR_Full) # AIC = -2002.255
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10143%
+PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6477395
+AIC(PP_BR_Full) # AIC = -2004.097
+cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10121%
 
 # - Remove M_Emp_Growth_12
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -614,130 +614,60 @@ cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_Pe
 
 
 # ------ 4. Modelling themes | Phi
-# --- Macroeconomic & General portfolio-level theme
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
+string1<-"Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
                       g0_Delinq_Any_Aggr_Prop_Lag_1+
                       M_RealIncome_Growth_9+M_RealIncome_Growth_12+
                       M_RealGDP_Growth_9+M_RealGDP_Growth_12+
                       NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | M_RealIncome_Growth_12, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6425489
-AIC(PP_BR_Full) # AIC = -2007.081
-# Note using M_RealIncome_Growth_9 as input to phi couldn't make the algorithm converge.
+                      PerfSpell_Maturity_Aggr_Mean|"
+Phi_Set <- as.data.table(colnames(datAggr_train)[17:127])
+colnames(Phi_Set)<-"InputV_Phi"
+Phi_Set[,R2 := {
+  # Construct the formula string dynamically for each row of Phi_Set
+  formula_string <- paste(string1, InputV_Phi)
+  # Fit the betareg model and extract the pseudo R-squared value
+  betareg(as.formula(formula_string), data = datAggr_train)$pseudo.r.squared
+}, by = InputV_Phi]
 
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | M_RealGDP_Growth_9, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6429578 ***
-AIC(PP_BR_Full) # AIC = -2004.485
+Phi_Set[,p_val := {
+  # Construct the formula string dynamically for each row of Phi_Set
+  formula_string <- paste(string1, InputV_Phi)
+  # Fit the betareg model and extract the p-value
+  summary(betareg(as.formula(formula_string), data = datAggr_train))$coefficients$precision[2, "Pr(>|z|)"]
+}, by = InputV_Phi]
 
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | M_RealGDP_Growth_12, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6433461 ***
-AIC(PP_BR_Full) # AIC = -2003.724
-
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | NewLoans_Aggr_Prop_3, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6391091
-AIC(PP_BR_Full) # AIC = -2029.11
-
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | CreditLeverage_Aggr, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6402846
-AIC(PP_BR_Full) # AIC = -2027.46
-
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6317893
-AIC(PP_BR_Full) # AIC = -2057.623
-### RESULTS: Based on the single factor models, the M_RealGDP_Growth_12 and M_RealGDP_Growth_9 are the best covariates for modelling phi.
+# Order best input variables for phi
+Ordered_Phi_Set<-Phi_Set[order(R2, decreasing=TRUE),]
+Ordered_Phi_Set[p_val<0.1,]
+### RESULTS - best inputs to phi using single factor models for its input space is
+# M_Repo_Rate, M_Inflation_Growth_6, InstalmentToBalance_Aggr_Prop
 
 
-# --- Delinquency themed
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.642424 ***
-AIC(PP_BR_Full) # AIC = -2008.403
+# - Start off with the 3 best phi inputs
+PP_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
+                  g0_Delinq_Any_Aggr_Prop_Lag_1+
+                  M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                  M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                  NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                  PerfSpell_Maturity_Aggr_Mean| M_Repo_Rate+ M_Inflation_Growth_6+ InstalmentToBalance_Aggr_Prop, data=datAggr_train)
+summary(PP_Phi)
+PP_Phi$pseudo.r.squared # Pseudo R2 = 0.6425598
+AIC(PP_Phi) # AIC = -2004.362
+cat("MAE = ",round(mean(abs(predict(PP_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10157%
 
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | g0_Delinq_1_Ave, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6421974
-AIC(PP_BR_Full) # AIC = -2009.4
-
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Any_Aggr_Prop, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6422862 ***
-AIC(PP_BR_Full) # AIC = -2009.156
-
-PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Any_Aggr_Prop_Lag_1, data=datAggr_train)
-PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6421846
-AIC(PP_BR_Full) # AIC = -2010.758
-### RESULTS: Based on the single factor models, the g0_Delinq_Ave and g0_Delinq_Any_Aggr_Prop are the best covariates for modelling phi.
-
-# --- Fusion step
-# Combine insights mined from previous themes
-PP_Final_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean | M_RealGDP_Growth_9 + M_RealGDP_Growth_12 + g0_Delinq_Ave + g0_Delinq_Any_Aggr_Prop, data=datAggr_train)
-summary(PP_Final_Phi)
-PP_Final_Phi$pseudo.r.squared # Pseudo R2 = 0.6334611
-AIC(PP_Final_Phi) # AIC = -2024.419
-cat("MAE = ",round(mean(abs(predict(PP_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10288%
-
-# Remove M_RealGDP_Growth_9, M_RealGDP_Growth_12 and g0_Delinq_Any_Aggr_Prop
-PP_Final_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                        g0_Delinq_Any_Aggr_Prop_Lag_1+
-                        M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                        M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                        NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                        PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave , data=datAggr_train)
-summary(PP_Final_Phi)
-PP_Final_Phi$pseudo.r.squared # Pseudo R2 = 0.642424
-AIC(PP_Final_Phi) # AIC = -2008.403
-cat("MAE = ",round(mean(abs(predict(PP_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10214%
-cat("MAE = ",round(mean(abs(predict(PD_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03837%
-### RESULTS: g0_Delinq_2_Ave also a great input to help model phi. Removing M_DTI_Growth (which was also significant) further improved the model
-# results. Furthermore, we expect the coefficient direction of g0_Delinq_2_Ave to be negative when modelling phi, given that this implies high values of
-# g0_Delinq_2_Ave will result in a higher Var(y_i)
+# - Remove M_Inflation_Growth_6 and InstalmentToBalance_Aggr_Prop
+PP_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
+                  g0_Delinq_Any_Aggr_Prop_Lag_1+
+                  M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                  M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                  NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                  PerfSpell_Maturity_Aggr_Mean| M_Repo_Rate, data=datAggr_train)
+summary(PP_Phi)
+PP_Phi$pseudo.r.squared # Pseudo R2 = 0.6431879
+AIC(PP_Phi) # AIC = -2006.32
+cat("MAE = ",round(mean(abs(predict(PP_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10195%
+### RESULTS: When modelling the phi parameter, the repo rate gives the best r2 value. It is observed that when we use a lot of variables as a starting point
+# for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs.
 
 
 
@@ -745,11 +675,11 @@ cat("MAE = ",round(mean(abs(predict(PD_Final_Phi,datAggr_valid)-datAggr_valid$Y_
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
 PP_Final_Cnst_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                      g0_Delinq_Any_Aggr_Prop_Lag_1+
-                      M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                      M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                      NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                      PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
+                               g0_Delinq_Any_Aggr_Prop_Lag_1+
+                               M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                               M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                               NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                               PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(PP_Final_Cnst_Phi)
 PP_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.6434349
 AIC(PP_Final_Cnst_Phi) # AIC = -2005.661
@@ -757,33 +687,77 @@ cat("MAE = ",round(mean(abs(predict(PP_Final_Cnst_Phi,datAggr_valid)-datAggr_val
 
 # --- Dynamic Phi
 PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                        g0_Delinq_Any_Aggr_Prop_Lag_1+
-                        M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                        M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                        NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                        PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave , data=datAggr_train)
+                            g0_Delinq_Any_Aggr_Prop_Lag_1+
+                            M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                            M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                            NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                            PerfSpell_Maturity_Aggr_Mean| M_Repo_Rate, data=datAggr_train)
 summary(PP_Final_Dyn_Phi)
-PP_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.642424
-AIC(PP_Final_Dyn_Phi) # AIC = -2008.403
-cat("MAE = ",round(mean(abs(predict(PP_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10214%
+PP_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.6431879
+AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
+cat("MAE = ",round(mean(abs(predict(PP_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10195%
+### RESULTS: Looking at the pseudo R2, the constant phi model is superior and is henceforth used as the final model to tweak the link function on and 
+# to perform Cook's distance adjustment.
+
+
+# --- Final
+PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
+                    g0_Delinq_Any_Aggr_Prop_Lag_1+
+                    M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                    M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                    NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                    PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
+summary(PP_Final)
+PP_Final$pseudo.r.squared # Pseudo R2 = 0.6434349
+AIC(PP_Final) # AIC = -2005.661
+cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
+
+
+# - Link function on final mu input space
+link_func_stats<-rbind(sapply(c("logit", "probit", "cloglog", "loglog"), function(x) AIC(update(PP_Final, link = x))),
+                       sapply(c("logit", "probit", "cloglog", "loglog"), function(x) round(mean(abs(predict(update(PP_Final, link = x),datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100),
+                       sapply(c("logit", "probit", "cloglog", "loglog"), function(x) update(PP_Final, link = x)$pseudo.r.squared))
+rownames(link_func_stats)<-c("AIC","MAE","Pseudo R^2")
+link_func_stats
+optimal_link<-"cloglog"
+### RESULTS - Ranked links based on Pseudo R2 for links (similar results hold for other measures):
+# 1) cloglog; 2) probit; 3) logit; loglog
+# Results are quite similar as the range of the pseudo r2 is [0.8549787, 0.6709252]
+
+# - Update link function
+PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
+                    g0_Delinq_Any_Aggr_Prop_Lag_1+
+                    M_RealIncome_Growth_9+M_RealIncome_Growth_12+
+                    M_RealGDP_Growth_9+M_RealGDP_Growth_12+
+                    NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+                    PerfSpell_Maturity_Aggr_Mean, data=datAggr_train, link=optimal_link)
+summary(PP_Final)
+PP_Final$pseudo.r.squared # Pseudo R2 = 0.6709252
+AIC(PP_Final) # AIC = -2005.263
+cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10173%
 
 
 
+# ------ 6. Cooks Distance Adjustment
+# - Interactive runs are done to observe the best combinations of observations to leave out
+# Cooks Distance Plot
+plot(PP_Final, which = 2, type = "pearson",xlab="obs")
+# Obtain observations with the biggest CD values
+sort(round(cooks.distance(PP_Final),4))
+# Specify training points to remove
+Leave_Out<-c(191)
+# Retrain model on new training set
+PP_Adj<-update(PP_Final,subset=-Leave_Out)
+cat("Pseudo R^2 before adjustment = ",PP_Final$pseudo.r.squared," --- ","Pseudo R^2 after adjustment = ",PP_Adj$pseudo.r.squared,"\n",sep="")
+# Plot
+plot(datAggr_valid$Date,predict(PP_Adj,datAggr_valid),type="l",col="red",lwd=2,ylim=c(0.98,1),xlab="Date",ylab="Transition probability",main="Constant Phi after Cooks adjustment")
+lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_PerfToPerf),type="l")
+MAEval<-round(mean(abs(predict(PP_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_PerfToPerf))),7)*100
+legend(x="topright",paste("MAE = ",MAEval,"%"))
+cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
+### RESULTS: Cooks distance adjustment improved the model fit:
+# Pseudo R2 before CD = 0.6709252; After CD = 0.7175224
 
-
-Phi_Set <- as.data.table(colnames(datAggr_train)[17:127])
-colnames(Phi_Set)<-"InputV_Phi"
-Phi_Set[,R2 := {
-  # Construct the formula string dynamically for each row
-  formula_string <- paste("Y_PerfToPerf ~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +",
-                          "g0_Delinq_Any_Aggr_Prop_Lag_1 +",
-                          "M_RealIncome_Growth_9 + M_RealIncome_Growth_12 +",
-                          "M_RealGDP_Growth_9 + M_RealGDP_Growth_12 +",
-                          "NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +",
-                          "PerfSpell_Maturity_Aggr_Mean |", InputV_Phi)
-  # Fit the betareg model and extract the pseudo R-squared value
-  betareg(as.formula(formula_string), data = datAggr_train)$pseudo.r.squared
-}, by = InputV_Phi]
-
-Ordered_Phi_Set<-Phi_Set[order(R2, decreasing=TRUE),]
-
+# --- Save Model
+PP_Final<-PP_Adj
+pack.ffdf(paste0(genObjPath,"BR_P_To_P"), PP_Final)

@@ -28,13 +28,12 @@
 
 
 # ------ 1. Preliminaries
-
 # - Confirm that required data objects are loaded into memory
 if (!exists('datAggr_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
 if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
 
 # - Visual Plot of transition rate
-plot(datAggr_train$Date,datAggr_train$Y_DefToSet,type="l",ylab="Transition proportions", xlab="Date",main="Performance to performance transitions over time",lwd=2)
+plot(datAggr_train$Date,datAggr_train$Y_DefToSet,type="l",ylab="Transition proportions", xlab="Date",main="Default to settlement transitions over time",lwd=2)
 lines(datAggr_train$Date, datAggr_valid$Y_DefToSet,col="orange")
 legend(x="topright",legend=c("Training","Validation"),fill=c("black","orange"))
 
@@ -51,7 +50,7 @@ AIC(Delinq_Model) # AIC = -1447.777
 
 # Comparison of lags in: g0_Delinq_Any_Aggr_Prop
 Delinq_Model<-betareg(Y_DefToSet~g0_Delinq_Any_Aggr_Prop,data=datAggr_train)
-Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.009510545
+Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.009510545 ***
 AIC(Delinq_Model) # AIC = -1355.235
 
 Delinq_Model<-betareg(Y_DefToSet~g0_Delinq_Any_Aggr_Prop_Lag_1,data=datAggr_train)
@@ -75,7 +74,7 @@ Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.0051507
 AIC(Delinq_Model) # AIC = -1354.186
 
 Delinq_Model<-betareg(Y_DefToSet~g0_Delinq_Any_Aggr_Prop_Lag_12,data=datAggr_train)
-Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.008834295
+Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.008834295 ***
 AIC(Delinq_Model) # AIC = -1354.803
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # g0_Delinq_Any_Aggr_Prop and g0_Delinq_Any_Aggr_Prop_Lag_12
@@ -119,11 +118,11 @@ Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.04579614
 AIC(Delinq_Model) # AIC = -1362.13
 
 Delinq_Model<-betareg(Y_DefToSet~g0_Delinq_3_Ave,data=datAggr_train)
-Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.3521223
+Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.3521223 ***
 AIC(Delinq_Model) # AIC = -1438.776
 
 Delinq_Model<-betareg(Y_DefToSet~CuringEvents_Aggr_Prop,data=datAggr_train)
-Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.2582567
+Delinq_Model$pseudo.r.squared # Pseudo R2 = 0.2582567 ***
 AIC(Delinq_Model) # AIC = -1419.027
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # g0_Delinq_3_Ave and CuringEvents_Aggr_Prop
@@ -144,9 +143,9 @@ Delinq_Model_Full<-betareg(Y_DefToSet~ Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 
 summary(Delinq_Model_Full)
 Delinq_Model_Full$pseudo.r.squared # Pseudo R2 = 0.4825346
 AIC(Delinq_Model_Full) # AIC = -1497.23
-### RESULTS: 
-#
-#
+### RESULTS: The previous D to S transition rate is a good predictor for the next month's transition rate, this is likely because it informs the general level of 
+# transitions into settlement from default.
+
 
 # --- Macroeconomic-level
 # Comparison of lags in: Repo rate
@@ -211,6 +210,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.07047231 ***
 AIC(Macro_Model) # AIC = -1364.241
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_Inflation_Growth_12 and M_Inflation_Growth_9
+# R2 is similar to that of the repo rate
 
 
 # Comparison of lags in: Debt to Income
@@ -243,6 +243,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.06291662 ***
 AIC(Macro_Model) # AIC = -1363.956
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_DTI_Growth_12 and M_DTI_Growth_9
+# R2 is slightly lower than the repo rate
 
 
 # Comparison of lags in: Real Income Growth
@@ -275,6 +276,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.04860336
 AIC(Macro_Model) # AIC = -1363.24
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_RealIncome_Growth and M_RealIncome_Growth_1
+# R2 is higher than for the repo rate variables
 
 
 # Comparison of lags in: Employment Growth
@@ -307,6 +309,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.02849291
 AIC(Macro_Model) # AIC = -1358.705
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_Emp_Growth and M_Emp_Growth_1
+# R2 is higher than for the repo rate variables
 
 
 # Comparison of lags in: Real GDP Growth
@@ -339,7 +342,7 @@ Macro_Model$pseudo.r.squared # Pseudo R2 = 0.01972899
 AIC(Macro_Model) # AIC = -1357.104
 ### RESULTS: Based on the single factor model comparison the two best lags are:
 # M_RealGDP_Growth and M_RealGDP_Growth_1
-
+# R2 is slightly higher than for the repo rate variables
 
 # - Combining best versions of the lags
 Macro_Model_Full<-betareg(Y_DefToSet~ M_Repo_Rate + M_Repo_Rate_1 + M_Inflation_Growth_12 + M_Inflation_Growth_9 +
@@ -383,10 +386,9 @@ Macro_Model_Full<-betareg(Y_DefToSet~ M_Repo_Rate_1 +
 summary(Macro_Model_Full)
 Macro_Model_Full$pseudo.r.squared # Pseudo R2 = 0.3689096
 AIC(Macro_Model_Full) # AIC = -1444.269
-### RESULTS:
-#
-#
-#
+### RESULTS: Both the DTI and real income growth macroeconomic variables has two variants in the final ,acroeconmic model. 
+# These variables again seem to have some interactive effect given that the direction of the coefficient sign is positive for the one lag and 
+# negative for the other. The repo rate lagged one month is significant without its original form (or another lagged variant thereof) included.
 
 
 # - General portfolio level variables
@@ -452,7 +454,7 @@ summary(Aggr_Full_Model)
 Aggr_Full_Model$pseudo.r.squared # Pseudo R2 = 0.4970207
 AIC(Aggr_Full_Model) # AIC = -1489.862
 
-# - Remove InterestRate_Margin_Aggr_Med_3, InterestRate_Margin_Aggr_Med_2, NewLoans_Aggr_Prop_1, CuringEvents_Aggr_Prop, ArrearsToBalance_Aggr_Prop
+# - Remove InterestRate_Margin_Aggr_Med_3, InterestRate_Margin_Aggr_Med_2, NewLoans_Aggr_Prop_1, CuringEvents_Aggr_Prop and ArrearsToBalance_Aggr_Prop
 Aggr_Full_Model<-betareg(Y_DefToSet~NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
                            InstalmentToBalance_Aggr_Prop+
                            AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean
@@ -460,7 +462,8 @@ Aggr_Full_Model<-betareg(Y_DefToSet~NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
 summary(Aggr_Full_Model)
 Aggr_Full_Model$pseudo.r.squared # Pseudo R2 = 0.3692341
 AIC(Aggr_Full_Model) # AIC = -1436.39
-
+### RESULTS: The macroeconomic model vs the general portfolio level model have more or less the same fit statistics. InstalmentToBalance_Aggr_Prop has a large standard
+# error relative to the rest of the covariates and might need to be removed towards obtaining a more robust model.
 
 # ---  Fusion step
 # Combine insights mined from previous themes
@@ -475,7 +478,6 @@ summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5527834
 AIC(DS_BR_Full) # AIC = -1507.705
 cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.4132%
-
 
 # Remove NewLoans_Aggr_Prop_3
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
@@ -555,16 +557,8 @@ summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5390409
 AIC(DS_BR_Full) # AIC = -1515.548
 cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41804%
-
-# Remove InstalmentToBalance_Aggr_Prop
-DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
-                      g0_Delinq_3_Ave + 
-                      AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
-summary(DS_BR_Full)
-DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5390409
-AIC(DS_BR_Full) # AIC = -1515.548
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41804%
-
+### RESULTS: The only macroeconomic covariate that made it to the final model is real income growth. There seems to be latent interaction effects
+# between the covariates. Interestingly, the D to S model has a better goodness-of-fit than the P to S model, when looking at the pseudo R2.
 
 
 
@@ -594,7 +588,7 @@ Ordered_Phi_Set[p_val<0.1,]
 ### RESULTS - best inputs to phi using single factor models for its input space is
 # g0_Delinq_Ave, g0_Delinq_Any_Aggr_Prop, M_Repo_Rate_3
 
-# - Start of with the 3 best phi inputs
+# - Start off with the 3 best phi inputs
 DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
                       g0_Delinq_3_Ave + 
                       AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|g0_Delinq_Ave+g0_Delinq_Any_Aggr_Prop+M_Repo_Rate_3, data=datAggr_train)
@@ -620,6 +614,9 @@ summary(DS_Phi)
 DS_Phi$pseudo.r.squared # Pseudo R2 = 0.5391357
 AIC(DS_Phi) # AIC = -1516.948
 cat("MAE = ",round(mean(abs(predict(DS_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41854%
+### RESULTS: When modelling the phi parameter, the g0_Delinq_Ave covariate gives the best R2 value. It is observed that when we use a lot of variables as a starting point
+# for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs.
+
 
 
 
@@ -666,7 +663,7 @@ link_func_stats
 optimal_link<-"loglog"
 ### RESULTS - Ranked links based on Pseudo R2 for links (similar results hold for other measures):
 # 1) loglog; 2) probit; 3) logit; cloglog
-# Results are quite similar as the range of the pseudo r2 is [0.4104036, 0.4687433]
+# Results are quite similar as the range of the pseudo r2 is 0.5378441, 0.581419]
 
 # - Update link function
 DS_Final<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
@@ -695,7 +692,11 @@ plot(datAggr_valid$Date,predict(DS_Adj,datAggr_valid),type="l",col="red",lwd=2,y
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_DefToSet),type="l")
 MAEval<-round(mean(abs(predict(DS_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_DefToSet))),7)*100
 legend(x="topright",paste("MAE = ",MAEval,"%"))
-cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="") # MAE = 0.03802%
+cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="") # MAE = 0.42294%
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# MAE before CD = 0.09523%; After CD = 0.09606%
-# Pseudo R2 before CD = 0.4687433; After CD = 0.6021219
+# MAE before CD = 0.42069%; After CD = 0.42294%
+# Pseudo R2 before CD = 0.581419; After CD = 0.6346869
+
+# --- Save Model
+DS_Final<-DS_Adj
+pack.ffdf(paste0(genObjPath,"BR_D_To_S"), DS_Final)

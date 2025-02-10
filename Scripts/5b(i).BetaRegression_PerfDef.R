@@ -573,7 +573,7 @@ PD_BR_Final_Mu<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
                       M_Repo_Rate+M_Inflation_Growth_2+
                       M_DTI_Growth+M_DTI_Growth_1+
                       M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+DefaultStatus1_Aggr_Prop_Lag_2+
-                      g0_Delinq_2_Ave , data=datAggr_train)
+                      g0_Delinq_2_Ave, data=datAggr_train)
 summary(PD_BR_Final_Mu)
 PD_BR_Final_Mu$pseudo.r.squared # Pseudo R2 = 0.8543395
 AIC(PD_BR_Final_Mu) # AIC = -2444.381
@@ -583,99 +583,67 @@ cat("MAE = ",round(mean(abs(predict(PD_BR_Final_Mu,datAggr_valid)-datAggr_valid$
 
 
 # ------ 4. Modelling themes | Phi
-# --- Macroeconomic & Portfolio-level theme
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                          M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                          DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_Repo_Rate, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8540518
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2442.836
+string1<-"Y_PerfToDef~Ave_Margin_Aggr+
+                      M_Repo_Rate+M_Inflation_Growth_2+
+                      M_DTI_Growth+M_DTI_Growth_1+
+                      M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+DefaultStatus1_Aggr_Prop_Lag_2+
+                      g0_Delinq_2_Ave|"
+Phi_Set <- as.data.table(colnames(datAggr_train)[17:127])
+colnames(Phi_Set)<-"InputV_Phi"
+Phi_Set[,R2 := {
+  # Construct the formula string dynamically for each row of Phi_Set
+  formula_string <- paste(string1, InputV_Phi)
+  # Fit the betareg model and extract the pseudo R-squared value
+  betareg(as.formula(formula_string), data = datAggr_train)$pseudo.r.squared
+}, by = InputV_Phi]
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_Inflation_Growth_2, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8543009
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2442.74
+Phi_Set[,p_val := {
+  # Construct the formula string dynamically for each row of Phi_Set
+  formula_string <- paste(string1, InputV_Phi)
+  # Fit the betareg model and extract the p-value
+  summary(betareg(as.formula(formula_string), data = datAggr_train))$coefficients$precision[2, "Pr(>|z|)"]
+}, by = InputV_Phi]
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_DTI_Growth, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8543273
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2442.451
+# Order best input variables for phi
+Ordered_Phi_Set<-Phi_Set[order(R2, decreasing=TRUE),]
+Ordered_Phi_Set[p_val<0.1,]
+### RESULTS - best inputs to phi using single factor models for its input space is
+# g0_Delinq_2_Ave, NewLoans_Aggr_Prop_5, NewLoans_Aggr_Prop_3
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_DTI_Growth_1, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8543392 ***
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2442.381
+# - Start off with the 3 best phi inputs
+PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
+                  M_Repo_Rate+M_Inflation_Growth_2+
+                  M_DTI_Growth+M_DTI_Growth_1+
+                  M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+DefaultStatus1_Aggr_Prop_Lag_2+
+                  g0_Delinq_2_Ave| g0_Delinq_2_Ave+NewLoans_Aggr_Prop_5+NewLoans_Aggr_Prop_3, data=datAggr_train)
+summary(PD_Phi)
+PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8545452
+AIC(PD_Phi) # AIC = -2450.682
+cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03818%
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_Emp_Growth_9, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8536546
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2444.846
+# - Remove g0_Delinq_2_Ave
+PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
+                  M_Repo_Rate+M_Inflation_Growth_2+
+                  M_DTI_Growth+M_DTI_Growth_1+
+                  M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+DefaultStatus1_Aggr_Prop_Lag_2+
+                  g0_Delinq_2_Ave|NewLoans_Aggr_Prop_5+NewLoans_Aggr_Prop_3, data=datAggr_train)
+summary(PD_Phi)
+PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8545452
+AIC(PD_Phi) # AIC = -2450.682
+cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03818%
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_Emp_Growth_12, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8539764
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2447.126
+# vs
 
-PD_Dynamic_Phi_Macro<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | Ave_Margin_Aggr, data=datAggr_train)
-PD_Dynamic_Phi_Macro$pseudo.r.squared # Pseudo R2 = 0.8543216 ***
-AIC(PD_Dynamic_Phi_Macro) # AIC = -2442.449
-### RESULTS: Based on the single factor models, the M_DTI_Growth_1 and Ave_Margin_Aggr, are the best covariates for modelling phi.
-
-
-# --- Delinquency themed
-PD_Dynamic_Phi_Delinq<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | DefaultStatus1_Aggr_Prop_Lag_1, data=datAggr_train)
-PD_Dynamic_Phi_Delinq$pseudo.r.squared # Pseudo R2 = 0.8541664
-AIC(PD_Dynamic_Phi_Delinq) # AIC = -2442.592
-
-PD_Dynamic_Phi_Delinq<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                 M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                 DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | DefaultStatus1_Aggr_Prop_Lag_2, data=datAggr_train)
-PD_Dynamic_Phi_Delinq$pseudo.r.squared # Pseudo R2 = 0.8542119 ***
-AIC(PD_Dynamic_Phi_Delinq) # AIC = -2442.553
-
-PD_Dynamic_Phi_Delinq<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                 M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                 DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train)
-PD_Dynamic_Phi_Delinq$pseudo.r.squared # Pseudo R2 = 0.8550763 ***
-AIC(PD_Dynamic_Phi_Delinq) # AIC = -2446.353
-### RESULTS: Based on the single factor models, the DefaultStatus1_Aggr_Prop_Lag_2 and g0_Delinq_2_Ave, are the best covariates for modelling phi.
-
-
-# --- Fusion step
-# Combine insights mined from previous themes
-PD_Final_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                                 M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                                 DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_DTI_Growth + Ave_Margin_Aggr+ DefaultStatus1_Aggr_Prop_Lag_2 + g0_Delinq_2_Ave, data=datAggr_train)
-summary(PD_Final_Phi)
-PD_Final_Phi$pseudo.r.squared # Pseudo R2 = 0.8538607
-AIC(PD_Final_Phi) # AIC = -2449.148
-cat("MAE = ",round(mean(abs(predict(PD_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03875%
-
-# Remove Ave_Margin_Aggr and DefaultStatus1_Aggr_Prop_Lag_2
-PD_Final_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                    M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                    DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | M_DTI_Growth + g0_Delinq_2_Ave, data=datAggr_train)
-summary(PD_Final_Phi)
-PD_Final_Phi$pseudo.r.squared # Pseudo R2 = 0.8534394
-AIC(PD_Final_Phi) # AIC = -2452.707
-cat("MAE = ",round(mean(abs(predict(PD_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.0387%
-
-# Remove M_DTI_Growth as a test
-PD_Final_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                    M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                    DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train)
-summary(PD_Final_Phi)
-PD_Final_Phi$pseudo.r.squared # Pseudo R2 = 0.8550763
-AIC(PD_Final_Phi) # AIC = -2446.353
-cat("MAE = ",round(mean(abs(predict(PD_Final_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03837%
+# - Remove NewLoans_Aggr_Prop_5 and NewLoans_Aggr_Prop_3
+PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
+                  M_Repo_Rate+M_Inflation_Growth_2+
+                  M_DTI_Growth+M_DTI_Growth_1+
+                  M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+DefaultStatus1_Aggr_Prop_Lag_2+
+                  g0_Delinq_2_Ave|g0_Delinq_2_Ave, data=datAggr_train)
+summary(PD_Phi)
+PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8550763
+AIC(PD_Phi) # AIC = -2446.353
+cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03837%
 ### RESULTS: g0_Delinq_2_Ave is also a great input to model phi. Removing M_DTI_Growth (which was also significant) further improved the model
 # results. Furthermore, we expect the coefficient direction of g0_Delinq_2_Ave to be negative when modelling phi, given that this implies high values of
 # g0_Delinq_2_Ave will result in a higher Var(y_i)
@@ -755,12 +723,10 @@ plot(datAggr_valid$Date,predict(PD_Adj,datAggr_valid),type="l",col="red",lwd=2,y
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_PerfToDef),type="l")
 MAEval<-round(mean(abs(predict(PD_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_PerfToDef))),7)*100
 legend(x="topright",paste("MAE = ",MAEval,"%"))
-cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="") # MAE = 0.03802%
+cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# MAE before CD =  0.03831%; After CD = 0.03802%
 # Pseudo R2 before CD = 0.864546; After CD = 0.8723582
 
-
-
-
-
+# --- Save Model
+PD_Final<-PD_Adj
+pack.ffdf(paste0(genObjPath,"BR_P_To_D"), PD_Final)
