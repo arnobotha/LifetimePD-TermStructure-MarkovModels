@@ -1236,42 +1236,60 @@ proc.time() - ptm # IGNORE: elapsed runtime; 2.1h
 
 
 # --- Model 1b, training set
-modMLR_sub_cand <- multinom(Target_FromP ~ g0_Delinq_Ave +  DefaultStatus1_Aggr_Prop + 
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave +  DefaultStatus1_Aggr_Prop + 
                               BalanceToPrincipal + slc_acct_pre_lim_perc_imputed_med + InterestRate_Margin + 
                               g0_Delinq_Num + g0_Delinq_SD_6 + TimeInDelinqState +  g0_Delinq_fac + pmnt_method_grp +
                               StateSpell_Num_Total + slc_acct_roll_ever_24_imputed_mean + 
                               M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate , 
                             data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
-evalMLR(modMLR_sub_cand, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
+evalMLR(modMLR_perf, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
 ### RESULTS: AIC: 904,657; McFadden R^2:  22.55%; AUC:  76.65%
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
-modLR_Result <- dropterm(modMLR_sub_cand, trace=F, test="Chisq", maxit=50)
+modLR_Result <- dropterm(modMLR_perf, trace=F, test="Chisq", maxit=50)
 proc.time() - ptm # IGNORE: elapsed runtime; 7.5h
 ### RESULTS: Following variables are insignificant: slc_acct_pre_lim_perc_imputed_med + TimeInDelinqState + M_Inflation_Growth_2
 
 
 
 # --- Model 2, training set
-modMLR_sub_cand <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
                               BalanceToPrincipal + InterestRate_Margin + 
                               g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
                               StateSpell_Num_Total + slc_acct_roll_ever_24_imputed_mean + 
                               M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate , 
                             data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
-evalMLR(modMLR_sub_cand, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
+evalMLR(modMLR_perf, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
 ### RESULTS: AIC: 897,469; McFadden R^2:  23.16%; AUC:  76.65%
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
-modLR_Result <- dropterm(modMLR_sub_cand, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime; 7.5h
-### RESULTS: Following variables are insignificant: slc_acct_pre_lim_perc_imputed_med + TimeInDelinqState + M_Inflation_Growth_2
+modLR_Result <- dropterm(modMLR_perf, trace=F, test="Chisq", maxit=50)
+proc.time() - ptm # IGNORE: elapsed runtime; 4.8h
+### RESULTS: All variables are significant
+
+
+# --- Model 3, training set
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+                              BalanceToPrincipal + InterestRate_Margin + 
+                              g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
+                              StateSpell_Num_Total + slc_acct_roll_ever_24_imputed_mean + 
+                              M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
+                              CreditLeverage_Aggr + slc_acct_pre_lim_perc_imputed_med, 
+                            data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
+evalMLR(modMLR_perf, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
+### RESULTS: AIC: ; McFadden R^2:  ; AUC:  
+
+# - Statistical significance: Likelihood Ratio Test
+ptm <- proc.time() # for runtime calculations (ignore)
+modLR_Result <- dropterm(modMLR_perf, trace=F, test="Chisq", maxit=50)
+proc.time() - ptm # IGNORE: elapsed runtime; 4.8h
+### RESULTS: All variables are significant
 
 
 
 # --- Cleanup
 rm(datCredit_train, datCredit_train_sub, datCredit_valid, datKeys, datKeys_sampled, 
    modLR_Result, modMLR, modMLR_base, modMLR_base_sub, modMLR_full, modMLR_full_sub,
-   modMLR_single_sub, modMLR_sub_cand, modMLR_full_sub_stepwise); gc()
+   modMLR_single_sub, modMLR_sub_cand, modMLR_full_sub_stepwise, modMLR_perf); gc()

@@ -78,6 +78,7 @@ plotROC <- function(actuals, predictions, label, chosenFont="Cambria", fileName=
     
     # - Save graph
     ggsave(g1, file=paste0(fileName, ".png"), width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white")
+    
     return(list(ROC=roc_Obj, Graph=g1, AUC_String=paste0("AUC =", AUC, " ± ", err)))
   } else {
     return(list(ROC=roc_Obj, AUC_String=paste0("AUC =", AUC, " ± ", err)))

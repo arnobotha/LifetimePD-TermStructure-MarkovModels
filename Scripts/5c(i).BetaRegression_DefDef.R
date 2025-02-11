@@ -1,6 +1,6 @@
 # =================================== BETA REGRESSION MODEL: DEF-DEF =================================
 # Fitting various beta regression models towards finalizing the input space of the final beta regression
-# model in modelling the transition rate: Performing to Performing
+# model in modelling the transition rate: Default to Default
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -628,7 +628,7 @@ cat("MAE = ",round(mean(abs(predict(DD_Phi,datAggr_valid)-datAggr_valid$Y_DefToD
 
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
-DD_Final_Cnst_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+DD_Final_Cnst_Phi<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                              CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                              M_Emp_Growth + ArrearsToBalance_Aggr_Prop, data=datAggr_train)
 summary(DD_Final_Cnst_Phi)
@@ -638,7 +638,7 @@ cat("MAE = ",round(mean(abs(predict(DD_Final_Cnst_Phi,datAggr_valid)-datAggr_val
 
 
 # --- Dynamic Phi
-DD_Final_Dyn_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+DD_Final_Dyn_Phi<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                             CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                             M_Emp_Growth + ArrearsToBalance_Aggr_Prop| ArrearsToBalance_Aggr_Prop, data=datAggr_train)
 summary(DD_Final_Dyn_Phi)
@@ -650,7 +650,7 @@ cat("MAE = ",round(mean(abs(predict(DD_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-DD_Final<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+DD_Final<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                     M_Emp_Growth + ArrearsToBalance_Aggr_Prop, data=datAggr_train)
 summary(DD_Final)
@@ -671,7 +671,7 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is [0.3213379, 0.3253668]
 
 # - Update link function
-DD_Final<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+DD_Final<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                     M_Emp_Growth + ArrearsToBalance_Aggr_Prop, data=datAggr_train, link=optimal_link)
 summary(DD_Final)

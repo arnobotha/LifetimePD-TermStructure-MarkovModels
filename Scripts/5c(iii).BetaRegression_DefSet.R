@@ -1,6 +1,6 @@
 # =================================== BETA REGRESSION MODEL: DEF-SET =================================
 # Fitting various beta regression models towards finalizing the input space of the final beta regression
-# model in modelling the transition rate: Performing to Performing
+# model in modelling the transition rate: Default to Settlement
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -623,9 +623,8 @@ cat("MAE = ",round(mean(abs(predict(DS_Phi,datAggr_valid)-datAggr_valid$Y_DefToS
 
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
-DS_Final_Cnst_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
-                             g0_Delinq_3_Ave + 
-                             AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
+DS_Final_Cnst_Phi<-betareg(Y_DefToSet ~ Prev_DS + M_RealIncome_Growth + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
+                             AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(DS_Final_Cnst_Phi)
 DS_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.5390409
 AIC(DS_Final_Cnst_Phi) # AIC = -1515.548
@@ -634,9 +633,8 @@ cat("MAE = ",round(mean(abs(predict(DS_Final_Cnst_Phi,datAggr_valid)-datAggr_val
 
 
 # --- Dynamic Phi
-DS_Final_Dyn_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
-                            g0_Delinq_3_Ave + 
-                            AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|g0_Delinq_Ave, data=datAggr_train)
+DS_Final_Dyn_Phi<-betareg(Y_DefToSet ~ Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
+                            AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave, data=datAggr_train)
 summary(DS_Final_Dyn_Phi)
 DS_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.5391357
 AIC(DS_Final_Dyn_Phi) # AIC = -1516.948
@@ -646,9 +644,8 @@ cat("MAE = ",round(mean(abs(predict(DS_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-DS_Final<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
-                    g0_Delinq_3_Ave + 
-                    AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|g0_Delinq_Ave, data=datAggr_train)
+DS_Final<-betareg(Y_DefToSet ~ Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
+                    AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave, data=datAggr_train)
 summary(DS_Final)
 DS_Final$pseudo.r.squared # Pseudo R2 = 0.5391357
 AIC(DS_Final) # AIC = -1516.948
@@ -666,9 +663,8 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is 0.5378441, 0.581419]
 
 # - Update link function
-DS_Final<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
-                    g0_Delinq_3_Ave + 
-                    AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|g0_Delinq_Ave, data=datAggr_train, link=optimal_link)
+DS_Final<-betareg(Y_DefToSet ~ Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
+                    AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave, data=datAggr_train, link=optimal_link)
 summary(DS_Final)
 DS_Final$pseudo.r.squared # Pseudo R2 = 0.581419
 AIC(DS_Final) # AIC = -1515.873

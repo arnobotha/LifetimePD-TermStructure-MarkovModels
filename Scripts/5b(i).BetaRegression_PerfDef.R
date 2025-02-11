@@ -1,6 +1,6 @@
 # =================================== BETA REGRESSION MODEL: PERF-DEF =================================
 # Fitting various beta regression models towards finalizing the input space of the final beta regression
-# model in modelling the transition rate: Performing to Performing
+# model in modelling the transition rate: Performing to Default
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -653,9 +653,9 @@ cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfTo
 
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
-PD_Final_Cnst_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                        M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                        DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave, data=datAggr_train)
+PD_Final_Cnst_Phi<-betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Growth_2 +
+                        M_DTI_Growth + M_DTI_Growth_1 + M_Emp_Growth_9 + M_Emp_Growth_12 + DefaultStatus1_Aggr_Prop_Lag_1 +
+                        DefaultStatus1_Aggr_Prop_Lag_2 + g0_Delinq_2_Ave, data=datAggr_train)
 summary(PD_Final_Cnst_Phi)
 PD_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.8543395
 AIC(PD_Final_Cnst_Phi) # AIC = -2444.381
@@ -675,9 +675,9 @@ cat("MAE = ",round(mean(abs(predict(PD_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-PD_Final<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                            M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                            DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train)
+PD_Final<-betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Growth_2 +
+                            M_DTI_Growth + M_DTI_Growth_1 + M_Emp_Growth_9 + M_Emp_Growth_12 + DefaultStatus1_Aggr_Prop_Lag_1 +
+                            DefaultStatus1_Aggr_Prop_Lag_2 + g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train)
 summary(PD_Final)
 PD_Final$pseudo.r.squared # Pseudo R2 = 0.8550763
 AIC(PD_Final) # AIC = -2446.353
@@ -696,9 +696,9 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is [0.8549787,0.864546]
 
 # - Update link function
-PD_Final<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Growth_2+
-                    M_DTI_Growth+M_DTI_Growth_1+M_Emp_Growth_9+M_Emp_Growth_12+DefaultStatus1_Aggr_Prop_Lag_1+
-                    DefaultStatus1_Aggr_Prop_Lag_2+g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train, link = optimal_link)
+PD_Final<-betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Growth_2 +
+                    M_DTI_Growth + M_DTI_Growth_1 + M_Emp_Growth_9 + M_Emp_Growth_12 + DefaultStatus1_Aggr_Prop_Lag_1 +
+                    DefaultStatus1_Aggr_Prop_Lag_2 + g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train, link = optimal_link)
 summary(PD_Final)
 PD_Final$pseudo.r.squared # Pseudo R2 = 0.864546
 AIC(PD_Final) # AIC = -2447.781

@@ -1,6 +1,6 @@
 # =================================== BETA REGRESSION MODEL: PERF-SET =================================
 # Fitting various beta regression models towards finalizing the input space of the final beta regression
-# model in modelling the transition rate: Performing to Performing
+# model in modelling the transition rate: Performing to Settlement
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -603,8 +603,7 @@ cat("MAE = ",round(mean(abs(predict(PD_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-PS_Final<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
-                                      g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
+PS_Final<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
                                       CreditLeverage_Aggr+AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|M_Repo_Rate, data=datAggr_train)
 summary(PS_Final)
 PS_Final$pseudo.r.squared # Pseudo R2 = 0.4111419
@@ -624,9 +623,8 @@ optimal_link<-"loglog"
 
 # - Update link function
 # Also remove intercept as it is no longer statistically significant
-PS_Final<-betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 +
-                    g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
-                    CreditLeverage_Aggr+AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean|M_Repo_Rate, data=datAggr_train, link=optimal_link)
+PS_Final<-betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
+                    CreditLeverage_Aggr + AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link=optimal_link)
 summary(PS_Final)
 PS_Final$pseudo.r.squared # Pseudo R2 = 0.4632961
 AIC(PS_Final) # AIC = -1958.794

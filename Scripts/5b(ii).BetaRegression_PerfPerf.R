@@ -674,11 +674,9 @@ cat("MAE = ",round(mean(abs(predict(PP_Phi,datAggr_valid)-datAggr_valid$Y_PerfTo
 
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
-PP_Final_Cnst_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                               g0_Delinq_Any_Aggr_Prop_Lag_1+
-                               M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                               M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                               NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+PP_Final_Cnst_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+                               g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9+M_RealIncome_Growth_12 +
+                               M_RealGDP_Growth_9+M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +
                                PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(PP_Final_Cnst_Phi)
 PP_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.6434349
@@ -686,12 +684,10 @@ AIC(PP_Final_Cnst_Phi) # AIC = -2005.661
 cat("MAE = ",round(mean(abs(predict(PP_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
 
 # --- Dynamic Phi
-PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                            g0_Delinq_Any_Aggr_Prop_Lag_1+
-                            M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                            M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                            NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
-                            PerfSpell_Maturity_Aggr_Mean| M_Repo_Rate, data=datAggr_train)
+PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+                            g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9+M_RealIncome_Growth_12 +
+                            M_RealGDP_Growth_9+M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3+CreditLeverage_Aggr +
+                            PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train)
 summary(PP_Final_Dyn_Phi)
 PP_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.6431879
 AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
@@ -701,11 +697,9 @@ cat("MAE = ",round(mean(abs(predict(PP_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                    g0_Delinq_Any_Aggr_Prop_Lag_1+
-                    M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                    M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                    NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+                    g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9+M_RealIncome_Growth_12 +
+                    M_RealGDP_Growth_9+M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3+CreditLeverage_Aggr +
                     PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(PP_Final)
 PP_Final$pseudo.r.squared # Pseudo R2 = 0.6434349
@@ -725,11 +719,9 @@ optimal_link<-"cloglog"
 # Results are quite similar as the range of the pseudo r2 is [0.8549787, 0.6709252]
 
 # - Update link function
-PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
-                    g0_Delinq_Any_Aggr_Prop_Lag_1+
-                    M_RealIncome_Growth_9+M_RealIncome_Growth_12+
-                    M_RealGDP_Growth_9+M_RealGDP_Growth_12+
-                    NewLoans_Aggr_Prop_3+CreditLeverage_Aggr+
+PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+                    g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12 +
+                    M_RealGDP_Growth_9 + M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +
                     PerfSpell_Maturity_Aggr_Mean, data=datAggr_train, link=optimal_link)
 summary(PP_Final)
 PP_Final$pseudo.r.squared # Pseudo R2 = 0.6709252

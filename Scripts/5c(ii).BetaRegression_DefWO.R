@@ -1,6 +1,6 @@
 # =================================== BETA REGRESSION MODEL: DEF-DEF =================================
 # Fitting various beta regression models towards finalizing the input space of the final beta regression
-# model in modelling the transition rate: Performing to Performing
+# model in modelling the transition rate: Default to Write-off
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Roland Breedt (RB), Dr Arno Botha (AB)
@@ -585,10 +585,9 @@ cat("MAE = ",round(mean(abs(predict(DW_Phi,datAggr_valid)-datAggr_valid$Y_DefToW
 
 # ------ 5. Finalised input space of the model
 # --- Constant Phi
-DW_Final_Cnst_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
-                             M_Emp_Growth+CreditLeverage_Aggr+
-                             CuringEvents_Aggr_Prop+
-                             AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
+DW_Final_Cnst_Phi<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
+                             M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop +
+                             AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
 summary(DW_Final_Cnst_Phi)
 DW_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.3025425
 AIC(DW_Final_Cnst_Phi) # AIC = -1959.108
@@ -596,10 +595,9 @@ cat("MAE = ",round(mean(abs(predict(DW_Final_Cnst_Phi,datAggr_valid)-datAggr_val
 
 
 # --- Dynamic Phi
-DW_Final_Dyn_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
-                            M_Emp_Growth+CreditLeverage_Aggr+
-                            CuringEvents_Aggr_Prop+
-                            AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean| -1 + M_RealGDP_Growth_3+DefaultStatus1_Aggr_Prop_Lag_1+M_DTI_Growth_12, data=datAggr_train)
+DW_Final_Dyn_Phi<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
+                            M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean + 
+                            PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, data=datAggr_train)
 summary(DW_Final_Dyn_Phi)
 DW_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.3044324
 AIC(DW_Final_Dyn_Phi) # AIC = -1515.571
@@ -608,10 +606,9 @@ cat("MAE = ",round(mean(abs(predict(DW_Final_Dyn_Phi,datAggr_valid)-datAggr_vali
 
 
 # --- Final
-DW_Final<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
-                    M_Emp_Growth+CreditLeverage_Aggr+
-                    CuringEvents_Aggr_Prop+
-                    AgeToTerm_Aggr_Mean+PerfSpell_Maturity_Aggr_Mean| -1 + M_RealGDP_Growth_3+DefaultStatus1_Aggr_Prop_Lag_1+M_DTI_Growth_12, data=datAggr_train)
+DW_Final<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
+                    M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean + 
+                    PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, data=datAggr_train)
 summary(DW_Final)
 DW_Final$pseudo.r.squared # Pseudo R2 = 0.3044324
 AIC(DW_Final) # AIC = -1523.041
@@ -630,10 +627,10 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is [0.3044324,0.3910874]
 
 # - Update link function
-DW_Final<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
-                    M_Emp_Growth+CreditLeverage_Aggr+
-                    CuringEvents_Aggr_Prop+ AgeToTerm_Aggr_Mean+
-                    PerfSpell_Maturity_Aggr_Mean| -1 + M_RealGDP_Growth_3+DefaultStatus1_Aggr_Prop_Lag_1+M_DTI_Growth_12, data=datAggr_train, link=optimal_link)
+DW_Final<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
+                    M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean +
+                    PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
+                  data=datAggr_train, link=optimal_link)
 summary(DW_Final)
 DW_Final$pseudo.r.squared # Pseudo R2 = 0.3910874
 AIC(DW_Final) # AIC = -1524.5
