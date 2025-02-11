@@ -49,6 +49,7 @@ require(DEoptimR) # Robust Optimisation Tool
 require(betareg) # Beta regression package
 require(nnet) # for multinomial logistic regression
 require(MASS) # for likelihood ratio tests dropterm() appropriate for MLR-models
+require(moments) # for residual analysis
 
 # for graphics
 require(ggplot2)
