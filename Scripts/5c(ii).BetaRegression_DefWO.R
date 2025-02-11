@@ -464,7 +464,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3189135
 AIC(DW_BR_Full) # AIC = -1513.587
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35799%
 
 # - Remove M_Repo_Rate_12
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+M_Repo_Rate_9+
@@ -475,7 +474,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3190236
 AIC(DW_BR_Full) # AIC = -1515.582
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35813%
 
 # - Remove M_DTI_Growth_9
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+M_Repo_Rate_9+
@@ -486,7 +484,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3196942
 AIC(DW_BR_Full) # AIC = -1517.468
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35753%
 
 # - Remove M_Repo_Rate_9
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
@@ -497,7 +494,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3194283
 AIC(DW_BR_Full) # AIC = -1518.873
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35482%
 
 # - Remove M_DTI_Growth_12
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
@@ -508,7 +504,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3152305
 AIC(DW_BR_Full) # AIC = -1519.093
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35285%
 
 # - Remove InstalmentToBalance_Aggr_Prop
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
@@ -519,7 +514,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3152305
 AIC(DW_BR_Full) # AIC = -1518.873
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.35482%
 
 # - Remove NewLoans_Aggr_Prop_4
 DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
@@ -529,7 +523,6 @@ DW_BR_Full<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEven
 summary(DW_BR_Full)
 DW_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3025425
 AIC(DW_BR_Full) # AIC = -1515.571
-cat("MAE = ",round(mean(abs(predict(DW_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.36999%
 ### RESULTS: The general portfolio level themed variables make up the majority of the input space. There seems to be latent interaction effects
 # between the covariates.
 
@@ -569,7 +562,6 @@ DW_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_A
 summary(DW_Phi)
 DW_Phi$pseudo.r.squared # Pseudo R2 = 0.3044386
 AIC(DW_Phi) # AIC = -1521.058
-cat("MAE = ",round(mean(abs(predict(DW_Phi,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.36865%
 
 # - Remove intercept
 DW_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_Aggr_Prop+
@@ -579,7 +571,6 @@ DW_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+CuringEvents_A
 summary(DW_Phi)
 DW_Phi$pseudo.r.squared # Pseudo R2 = 0.3044324
 AIC(DW_Phi) # AIC = -1523.041
-cat("MAE = ",round(mean(abs(predict(DW_Phi,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.36861%
 # RESULTS: This is the only one of the 6 BR models where the best input space for modelling phi is more than one covariate.
 
 
@@ -592,7 +583,6 @@ DW_Final_Cnst_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+Cur
 summary(DW_Final_Cnst_Phi)
 DW_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.3025425
 AIC(DW_Final_Cnst_Phi) # AIC = -1959.108
-cat("MAE = ",round(mean(abs(predict(DW_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.36999%
 
 
 # --- Dynamic Phi
@@ -603,7 +593,6 @@ DW_Final_Dyn_Phi<-betareg(Y_DefToWO~ Prev_DW+DefaultStatus1_Aggr_Prop_Lag_6+Curi
 summary(DW_Final_Dyn_Phi)
 DW_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.3044324
 AIC(DW_Final_Dyn_Phi) # AIC = -1515.571
-cat("MAE = ",round(mean(abs(predict(DW_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE =  0.36861%
 ### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model.
 
 

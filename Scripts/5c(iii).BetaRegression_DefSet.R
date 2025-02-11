@@ -477,7 +477,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5527834
 AIC(DS_BR_Full) # AIC = -1507.705
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.4132%
 
 # Remove NewLoans_Aggr_Prop_3
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
@@ -489,7 +488,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5527267
 AIC(DS_BR_Full) # AIC = -1509.662
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41413%
 
 # Remove M_DTI_Growth_9 
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
@@ -501,7 +499,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5523418
 AIC(DS_BR_Full) # AIC = -1511.607
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41366%
 
 # Remove  M_Repo_Rate_1
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
@@ -513,7 +510,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS + g0_Delinq_Any_Aggr_Prop_Lag_12 +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5518548
 AIC(DS_BR_Full) # AIC = -1513.526
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41425%
 
 # Remove g0_Delinq_Any_Aggr_Prop_Lag_12
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
@@ -525,7 +521,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5500201
 AIC(DS_BR_Full) # AIC = -1515.211
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41601%
 
 # Remove CreditLeverage_Aggr
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
@@ -536,7 +531,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5479652
 AIC(DS_BR_Full) # AIC = -1516.11
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41714%
 
 # Remove M_DTI_Growth_12
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
@@ -547,7 +541,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5462142
 AIC(DS_BR_Full) # AIC = -1516.893
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41613%
 
 # Remove InstalmentToBalance_Aggr_Prop
 DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
@@ -556,7 +549,6 @@ DS_BR_Full<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Gr
 summary(DS_BR_Full)
 DS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.5390409
 AIC(DS_BR_Full) # AIC = -1515.548
-cat("MAE = ",round(mean(abs(predict(DS_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41804%
 ### RESULTS: The only macroeconomic covariate that made it to the final model is real income growth. There seems to be latent interaction effects
 # between the covariates. Interestingly, the D to S model has a better goodness-of-fit than the P to S model, when looking at the pseudo R2.
 
@@ -595,7 +587,6 @@ DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth
 summary(DS_Phi)
 DS_Phi$pseudo.r.squared # Pseudo R2 = 0.5325348
 AIC(DS_Phi) # AIC = -1530.674
-cat("MAE = ",round(mean(abs(predict(DS_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.42062%
 
 # - Remove M_Repo_Rate_3
 DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
@@ -604,7 +595,6 @@ DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth
 summary(DS_Phi)
 DS_Phi$pseudo.r.squared # Pseudo R2 = 0.5324038
 AIC(DS_Phi) # AIC = -1532.107
-cat("MAE = ",round(mean(abs(predict(DS_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.42051%
 
 # - Remove g0_Delinq_Any_Aggr_Prop
 DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1+
@@ -613,7 +603,6 @@ DS_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth
 summary(DS_Phi)
 DS_Phi$pseudo.r.squared # Pseudo R2 = 0.5391357
 AIC(DS_Phi) # AIC = -1516.948
-cat("MAE = ",round(mean(abs(predict(DS_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE = 0.41854%
 ### RESULTS: When modelling the phi parameter, the g0_Delinq_Ave covariate gives the best R2 value. It is observed that when we use a lot of variables as a starting point
 # for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs.
 
@@ -629,7 +618,6 @@ DS_Final_Cnst_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealIn
 summary(DS_Final_Cnst_Phi)
 DS_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.5390409
 AIC(DS_Final_Cnst_Phi) # AIC = -1515.548
-cat("MAE = ",round(mean(abs(predict(DS_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE =  0.41804%
 
 
 
@@ -640,7 +628,6 @@ DS_Final_Dyn_Phi<-betareg(Y_DefToSet~Prev_DS +  M_RealIncome_Growth  + M_RealInc
 summary(DS_Final_Dyn_Phi)
 DS_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.5391357
 AIC(DS_Final_Dyn_Phi) # AIC = -1516.948
-cat("MAE = ",round(mean(abs(predict(DS_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_DefToSet)),7)*100,"%",sep="","\n") # MAE =  0.41854%
 ### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
 # choose the dynamic phi model as our best.
 

@@ -482,7 +482,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3446756
 AIC(DD_BR_Full) # AIC = -1268.218
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.80621%
 
 # Remove  M_RealGDP_Growth
 DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -493,7 +492,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3440221
 AIC(DD_BR_Full) # AIC = -1269.739
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.80557%
 
 # Remove M_RealIncome_Growth
 DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -504,7 +502,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3437055
 AIC(DD_BR_Full) # AIC = -1271.684
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.80464%
 
 # Remove Ave_Margin_Aggr
 DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -515,7 +512,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.337089
 AIC(DD_BR_Full) # AIC = -1272.093
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.80805%
 
 # Remove M_Inflation_Growth_3
 DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -526,7 +522,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3333937
 AIC(DD_BR_Full) # AIC = -1273.416
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81239%
 
 # Remove InstalmentToBalance_Aggr_Prop
 DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -536,7 +531,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3251043
 AIC(DD_BR_Full) # AIC = -1273.086
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81987%
 ### RESULTS: Two DefaultStatus1_Aggr_Prop variables made it to the final constant phi model. The 12 month lag has a negative direction, whereas the
 # 6 month lag has a positive direction, implying some interactive effect between the two.
 
@@ -551,7 +545,6 @@ DD_BR_Full<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1
 summary(DD_BR_Full)
 DD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.3251043
 AIC(DD_BR_Full) # AIC = -1273.086
-cat("MAE = ",round(mean(abs(predict(DD_BR_Full,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81987%
 
 
 
@@ -592,7 +585,6 @@ DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Agg
 summary(DD_Phi)
 DD_Phi$pseudo.r.squared # Pseudo R2 = 0.3217507
 AIC(DD_Phi) # AIC = -1270.793
-cat("MAE = ",round(mean(abs(predict(DD_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE =  0.81838%
 
 # - Remove M_Inflation_Growth_2
 DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -601,7 +593,6 @@ DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Agg
 summary(DD_Phi)
 DD_Phi$pseudo.r.squared # Pseudo R2 = 0.3217507
 AIC(DD_Phi) # AIC = -1270.793
-cat("MAE = ",round(mean(abs(predict(DD_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE =  0.81838%
 
 # - Remove M_Inflation_Growth_2
 DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -610,7 +601,6 @@ DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Agg
 summary(DD_Phi)
 DD_Phi$pseudo.r.squared # Pseudo R2 = 0.322184
 AIC(DD_Phi) # AIC = -1272.752
-cat("MAE = ",round(mean(abs(predict(DD_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81887%
 
 # - Remove M_Inflation_Growth_6
 DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
@@ -619,7 +609,6 @@ DD_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Agg
 summary(DD_Phi)
 DD_Phi$pseudo.r.squared # Pseudo R2 = 0.3243365
 AIC(DD_Phi) # AIC = -1273.302
-cat("MAE = ",round(mean(abs(predict(DD_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.82054%
 ### RESULTS: When modelling the phi parameter, the ArrearsToBalance_Aggr_Prop covariate gives the best r2 value. It is observed that when we use a lot of variables as a starting point
 # for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs. 
 
@@ -634,7 +623,6 @@ DD_Final_Cnst_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + Default
 summary(DD_Final_Cnst_Phi)
 DD_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.3251043
 AIC(DD_Final_Cnst_Phi) # AIC = -1273.086
-cat("MAE = ",round(mean(abs(predict(DD_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81987%
 
 
 # --- Dynamic Phi
@@ -644,7 +632,6 @@ DD_Final_Dyn_Phi<-betareg(Y_DefToDef~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultS
 summary(DD_Final_Dyn_Phi)
 DD_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.3243365
 AIC(DD_Final_Dyn_Phi) # AIC = -1273.302
-cat("MAE = ",round(mean(abs(predict(DD_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.82054%
 ### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
 # choose the dynamic phi model as our best.
 

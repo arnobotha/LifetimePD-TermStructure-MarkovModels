@@ -475,7 +475,6 @@ PS_BR_Full<-betareg(Y_PerfToSet~Prev_PS + g0_Delinq_Any_Aggr_Prop + g0_Delinq_An
 summary(PS_BR_Full)
 PS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.4696749
 AIC(PS_BR_Full) # AIC = -1965.592
-cat("MAE = ",round(mean(abs(predict(PS_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE = 0.09416%
 
 # - Remove InterestRate_Margin_Aggr_Med_3 (very large std error)
 PS_BR_Full<-betareg(Y_PerfToSet~Prev_PS + g0_Delinq_Any_Aggr_Prop + g0_Delinq_Any_Aggr_Prop_Lag_2 +
@@ -486,7 +485,6 @@ PS_BR_Full<-betareg(Y_PerfToSet~Prev_PS + g0_Delinq_Any_Aggr_Prop + g0_Delinq_An
 summary(PS_BR_Full)
 PS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.4316819
 AIC(PS_BR_Full) # AIC = -1954.267
-cat("MAE = ",round(mean(abs(predict(PS_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE = 0.09157%
 
 # - Remove Prev_PS, M_RealIncome_Growth, M_RealIncome_Growth_3, M_DTI_Growth_12, M_DTI_Growth_1, NewLoans_Aggr_Prop_3 and g0_Delinq_Any_Aggr_Prop
 PS_BR_Full<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
@@ -497,7 +495,6 @@ PS_BR_Full<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PS_BR_Full)
 PS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.4110498
 AIC(PS_BR_Full) # AIC = -1959.108
-cat("MAE = ",round(mean(abs(predict(PS_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09491%
 ### RESULTS: Again, it does not seem as if the macroeconomic environment have such a big impact on the P to S transition rate, given that
 # employment growth was the only macroeconomic variable that made it to the final model. Moreover, it is plausible that something like employment growth
 # has more of an effect on settlement when compared to other macroeconomic variables such as the inflation rate.
@@ -514,7 +511,6 @@ PS_BR_Full<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PS_BR_Full)
 PS_BR_Full$pseudo.r.squared # Pseudo R2 = 0.4110498
 AIC(PS_BR_Full) # AIC = -1959.108
-cat("MAE = ",round(mean(abs(predict(PS_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09491%
 
 
 
@@ -557,7 +553,6 @@ PS_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PS_Phi)
 PS_Phi$pseudo.r.squared # Pseudo R2 = 0.4101771
 AIC(PS_Phi) # AIC = -1969.606
-cat("MAE = ",round(mean(abs(predict(PS_Phi,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09771%
 
 # - Remove InstalmentToBalance_Aggr_Prop and M_Repo_Rate_2
 PS_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
@@ -566,7 +561,6 @@ PS_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PS_Phi)
 PS_Phi$pseudo.r.squared # Pseudo R2 = 0.4111419
 AIC(PS_Phi) # AIC = -1959.427
-cat("MAE = ",round(mean(abs(predict(PS_Phi,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE = 0.09501%
 ### RESULTS: Modelling phi as dynamic improves the R2 slightly by 0.24%. It is observed that when we use a lot of variables as a starting point
 # for the input space to phi, the algorithm fails to converge, hence we only investigate the three best single factor inputs. All input variables
 # for modelling mu stay significant using the repo rate to model phi dynamically.
@@ -584,7 +578,6 @@ PD_Final_Cnst_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PD_Final_Cnst_Phi)
 PD_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.4110498
 AIC(PD_Final_Cnst_Phi) # AIC = -1959.108
-cat("MAE = ",round(mean(abs(predict(PD_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09491%
 
 
 
@@ -595,7 +588,6 @@ PD_Final_Dyn_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PD_Final_Dyn_Phi)
 PD_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.4111419
 AIC(PD_Final_Dyn_Phi) # AIC = -1959.427
-cat("MAE = ",round(mean(abs(predict(PD_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09501%
 ### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
 # choose the dynamic phi model as our best.
 
