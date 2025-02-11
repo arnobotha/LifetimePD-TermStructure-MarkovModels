@@ -102,11 +102,11 @@ datAggr_valid[, Prev_DS := shift(Y_DefToSet,n=1,type="lag",fill=0)]
 
 # -- Retain relevant features
 # Training set
-datAggr_train_features <- datCredit_train[!duplicated(Date),] %>% 
-  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")|contains("Ave")))
+datAggr_train_features <- datCredit_train[!duplicated(Date),] %>%
+  dplyr::select(contains("Date"), contains("M_",ignore.case=F), contains("Aggr"), contains("Ave"))
 # validation set
 datAggr_valid_features <- datCredit_valid[!duplicated(Date),] %>% 
-  select(contains("Date")|(contains("M_",ignore.case = FALSE)|contains("Aggr")|contains("Ave")))
+  dplyr::select(contains("Date"), contains("M_",ignore.case = F), contains("Aggr"), contains("Ave"))
 # Remove stratifier since it will not be used; an expediency
 datAggr_train_features[,Date_Origination:=NULL]
 datAggr_valid_features[,Date_Origination:=NULL]
@@ -121,4 +121,5 @@ pack.ffdf(paste0(genPath, "creditdata_valid_BR"), datAggr_valid); gc()
 
 # - Cleanup
 rm(datAggr_D_train, datAggr_D_valid, datAggr_P_valid, datAggr_P_train,
-   datAggr_train, datAggr_valid)
+   datAggr_train, datAggr_valid, datAggr_train_features, datAggr_valid_features,
+   datCredit_train, datCredit_valid); gc()

@@ -30,8 +30,8 @@
 # ------ 1. Preliminaries
 
 # - Confirm that required data objects are loaded into memory
-if (!exists('datCredit_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
-if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
+if (!exists('datAggr_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
+if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
 
 # - Visual Plot of transition rate
 plot(datAggr_train$Date,datAggr_train$Y_PerfToDef,type="l",ylab="Transition proportions", xlab="Date",main="Performance to performance transitions over time",lwd=2)
