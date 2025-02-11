@@ -28,7 +28,6 @@
 
 
 # ------ 1. Preliminaries
-
 # - Confirm that required data objects are loaded into memory
 if (!exists('datAggr_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
 if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
@@ -503,7 +502,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~InterestRate_Margin_Aggr_Med+Ave_Margin_Aggr+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8581106
 AIC(PD_BR_Full) # AIC = -2442.834
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03819%
 
 # Remove M_RealGDP_Growth_12
 PD_BR_Full<-betareg(Y_PerfToDef~InterestRate_Margin_Aggr_Med+Ave_Margin_Aggr+
@@ -514,7 +512,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~InterestRate_Margin_Aggr_Med+Ave_Margin_Aggr+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8599235
 AIC(PD_BR_Full) # AIC = -2444.054
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03824%
 
 # Remove InterestRate_Margin_Aggr_Med
 PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
@@ -525,7 +522,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8577103
 AIC(PD_BR_Full) # AIC = -2445.577
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03789%
 
 # Remove PerfSpell_Maturity_Aggr_Mean
 PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
@@ -536,7 +532,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8572009
 AIC(PD_BR_Full) # AIC = -2446.538
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03799%
 
 # Remove ArrearsToBalance_Aggr_Prop because:
 # std error is too high and results doesn't change significantly
@@ -548,7 +543,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate_2+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8529192
 AIC(PD_BR_Full) # AIC = -2442.483
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03833%
 
 # - Last interactive checks on the repo rate given its importance in default risk modelling
 PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+
@@ -559,7 +553,6 @@ PD_BR_Full<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+
 summary(PD_BR_Full)
 PD_BR_Full$pseudo.r.squared # Pseudo R2 = 0.8543395
 AIC(PD_BR_Full) # AIC = -2444.381
-cat("MAE = ",round(mean(abs(predict(PD_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03833%
 ### RESULTS: The delinquency and macroeconomic themed variables make up the majority of the input space. Both the repo and inflation rate 
 # are significant in the final model, which corroborates previous research that these variables are useful in credit risk models. g0_Delinq_2_Ave 
 # had the strongest one factor model and has a strong possitive relationship to the P to D transition rate. There seems to be latent interaction effects
@@ -577,7 +570,6 @@ PD_BR_Final_Mu<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_BR_Final_Mu)
 PD_BR_Final_Mu$pseudo.r.squared # Pseudo R2 = 0.8543395
 AIC(PD_BR_Final_Mu) # AIC = -2444.381
-cat("MAE = ",round(mean(abs(predict(PD_BR_Final_Mu,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03833%
 
 
 
@@ -619,7 +611,6 @@ PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_Phi)
 PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8545452
 AIC(PD_Phi) # AIC = -2450.682
-cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03818%
 
 # - Remove g0_Delinq_2_Ave
 PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
@@ -630,7 +621,6 @@ PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_Phi)
 PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8545452
 AIC(PD_Phi) # AIC = -2450.682
-cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03818%
 
 # vs
 
@@ -643,7 +633,6 @@ PD_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+
 summary(PD_Phi)
 PD_Phi$pseudo.r.squared # Pseudo R2 = 0.8550763
 AIC(PD_Phi) # AIC = -2446.353
-cat("MAE = ",round(mean(abs(predict(PD_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03837%
 ### RESULTS: g0_Delinq_2_Ave is also a great input to model phi. Removing M_DTI_Growth (which was also significant) further improved the model
 # results. Furthermore, we expect the coefficient direction of g0_Delinq_2_Ave to be negative when modelling phi, given that this implies high values of
 # g0_Delinq_2_Ave will result in a higher Var(y_i)
@@ -659,7 +648,6 @@ PD_Final_Cnst_Phi<-betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Infla
 summary(PD_Final_Cnst_Phi)
 PD_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.8543395
 AIC(PD_Final_Cnst_Phi) # AIC = -2444.381
-cat("MAE = ",round(mean(abs(predict(PD_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03833%
 
 
 # --- Dynamic Phi
@@ -669,7 +657,6 @@ PD_Final_Dyn_Phi<-betareg(Y_PerfToDef~Ave_Margin_Aggr+M_Repo_Rate+M_Inflation_Gr
 summary(PD_Final_Dyn_Phi)
 PD_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.8550763
 AIC(PD_Final_Dyn_Phi) # AIC = -2446.353
-cat("MAE = ",round(mean(abs(predict(PD_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03837%
 ### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
 # choose the dynamic phi model as our best.
 

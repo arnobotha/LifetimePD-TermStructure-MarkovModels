@@ -493,7 +493,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6483146
 AIC(PP_BR_Full) # AIC = -1996.54
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10135%
 
 # - Remove InstalmentToBalance_Aggr_Prop
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -505,7 +504,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6483124
 AIC(PP_BR_Full) # AIC = -1998.533
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10137%
 
 # - Remove ArrearsToBalance_Aggr_Prop
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -517,7 +515,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6480651
 AIC(PP_BR_Full) # AIC = -2000.4153
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10127%
 
 # - Remove M_DTI_Growth+
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -529,7 +526,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6478077
 AIC(PP_BR_Full) # AIC = -2002.255
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10143%
 
 # - Remove M_Emp_Growth_12
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -541,7 +537,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6477395
 AIC(PP_BR_Full) # AIC = -2004.097
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10121%
 
 # - Remove M_Emp_Growth_12
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -553,7 +548,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6477395
 AIC(PP_BR_Full) # AIC = -2004.097
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10121%
 
 # - Remove Ave_Margin_Aggr
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -565,7 +559,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.646386
 AIC(PP_BR_Full) # AIC = -2005.269
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.1008%
 
 # - Remove M_Repo_Rate
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -577,7 +570,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6444219
 AIC(PP_BR_Full) # AIC = -2005.062
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10289%
 
 # - Remove AgeToTerm_Aggr_Mean
 PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop+
@@ -589,7 +581,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6434349
 AIC(PP_BR_Full) # AIC = -2005.661
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
 ### RESULTS: The delinquency and macroeconomic themed variables make up the majority of the input space. The repo and inflation rate 
 # did not make it to the final model, implying they are less predictive for P to P transitions. High levels of g0_Delinq_Ave, g0_Delinq_1_Ave, and
 # g0_Delinq_Any_Aggr_Prop_Lag_1 result in a lower predicted P to P transition rate as expected. There seems to be latent interaction effects
@@ -608,7 +599,6 @@ PP_BR_Full<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_An
 summary(PP_BR_Full)
 PP_BR_Full$pseudo.r.squared # Pseudo R2 = 0.6434349
 AIC(PP_BR_Full) # AIC = -2005.661
-cat("MAE = ",round(mean(abs(predict(PP_BR_Full,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
 
 
 
@@ -681,7 +671,6 @@ PP_Final_Cnst_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_De
 summary(PP_Final_Cnst_Phi)
 PP_Final_Cnst_Phi$pseudo.r.squared # Pseudo R2 = 0.6434349
 AIC(PP_Final_Cnst_Phi) # AIC = -2005.661
-cat("MAE = ",round(mean(abs(predict(PP_Final_Cnst_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
 
 # --- Dynamic Phi
 PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
@@ -691,7 +680,6 @@ PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Del
 summary(PP_Final_Dyn_Phi)
 PP_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.6431879
 AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
-cat("MAE = ",round(mean(abs(predict(PP_Final_Dyn_Phi,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10195%
 ### RESULTS: Looking at the pseudo R2, the constant phi model is superior and is henceforth used as the final model to tweak the link function on and 
 # to perform Cook's distance adjustment.
 

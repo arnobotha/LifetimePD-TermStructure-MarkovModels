@@ -27,7 +27,6 @@
 
 
 # ------ 1. Preliminaries
-
 # - Confirm that required data objects are loaded into memory
 if (!exists('datCredit_train')) unpack.ffdf(paste0(genPath,"creditdata_train"), tempPath)
 if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid"), tempPath)
