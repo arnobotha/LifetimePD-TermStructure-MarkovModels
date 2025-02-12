@@ -50,6 +50,7 @@ require(betareg) # Beta regression package
 require(nnet) # for multinomial logistic regression
 require(MASS) # for likelihood ratio tests dropterm() appropriate for MLR-models
 require(moments) # for residual analysis
+require(splines) # for fitting regression models with splines
 
 # for graphics
 require(ggplot2)

@@ -46,7 +46,7 @@ if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"),
 datResults_MC <- Markov_TPM(DataSetMC=datCredit_smp,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
 
 
-# --- Beta regression (BR) model
+# --- Beta regression (BR) model | Performing
 suppressWarnings(rm(PD_Final)); unpack.ffdf(paste0(genObjPath,"BR_P_To_D"), tempPath)
 summary(PD_Final)
 PD_Final$pseudo.r.squared # Pseudo R2 = 0.8723582
@@ -55,43 +55,48 @@ cat("MAE = ",round(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_Perf
 
 
 # --- Multinomial Logistic Regression (MLR) model
-modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
-                          BalanceToPrincipal + InterestRate_Margin + 
-                          g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
-                          StateSpell_Num_Total + slc_acct_roll_ever_24_imputed_mean + 
-                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate +
-                          CreditLeverage_Aggr + slc_acct_pre_lim_perc_imputed_med, 
-                        data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
+modMLR_perf <- multinom(Target_FromP ~ 1)
 
+# Render loan-level predictions
+datAggr_valid[MarkovStatus=="Perf", pred_MLR := predict(modMLR_perf, newdata=datAggr_valid[MarkovStatus=="Perf",], type="probs")[,"Def"]]
 
 
 
 
 
 # ------ 3. Transition rate graph
+# - General parameters
+dteStart <- minDate_observed
 
-# --- Render predictions from fitted models
+# --- Render portfolio-level predictions from fitted models
+### AB: Need scalar for BR-models?
 pred_MC <- datResults_MC["Perf","Def"]/100
-pred_BR <- predict(PD_Final,datAggr_valid)
-datCredit_smp[MarkovStatus=="Perf", pred_MLR := predict(modMLR_perf, newdata=datCredit_smp[MarkovStatus=="Perf",], type="probs")[,"Def"]]
-pred_MLR <- datCredit_smp[MarkovStatus=="Perf", list(TransRate = mean(pred_MLR)), by=list(Date)]$TransRate
+pred_BR_perf <- predict(PD_Final,datAggr_valid[Date >= dteStart,])
+pred_MLR <- datAggr_valid[MarkovStatus=="Perf" & Date<maxDate_observed & Date >= dteStart, list(TransRate = mean(pred_MLR)), by=list(Date)]$TransRate
+
 
 
 # --- Graphing logic
 
 # - Aggregate to portfolio-level
-datAggr_sub <- datCredit_valid[Date<maxDate_observed,list(TransRate = mean(Y_PerfToDef_Sub,na.rm=T), Type="a_Actual"),by=list(Date)]
+datAggr_sub <- datCredit_valid[Date<maxDate_observed & Date >= dteStart & MarkovStatus=="Perf",
+                               list(TransRate = mean(Y_PerfToDef_Sub,na.rm=T), Type="a_Actual"),by=list(Date)]
 
 # - Merge Actuals and Predictions
 datAggr <- rbind(datAggr_sub,
                      data.table(Date=datAggr_sub$Date, TransRate=pred_MC, Type="b_MC"),
                      data.table(Date=datAggr_sub$Date, TransRate=pred_BR, Type="c_BR"),
                      data.table(Date=datAggr_sub$Date, TransRate=pred_MLR, Type="d_MLR"))
+                 )
+
+# - Actuals
+actual_sub <- datAggr_sub$TransRate
+actual_BR <- datAggr_valid$Y_PerfToDef
 
 # - Calculate MAEs
-MAE_MC <- round(mean(abs(datAggr_sub$TransRate-pred_MC)),7)
-MAE_BR <- round(mean(abs(datAggr_sub$TransRate-pred_BR)),7)
-MAE_MLR <- round(mean(abs(datAggr_sub$TransRate-pred_MLR)),7)
+(MAE_MC <- round(mean(abs(actual_sub-pred_MC)),7))
+(MAE_BR <- round(mean(abs(actual_BR-pred_BR)),7))
+(MAE_MLR <- round(mean(abs(actual_sub-pred_MLR)),7))
 
 # - Aesthetic engineering
 chosenFont <- "Cambria"; dpi <- 180
@@ -112,11 +117,11 @@ vLabel <-c("a_Actual"=bquote(italic(A[t*"'"])*': Actual'), "b_MC"=bquote(italic(
   geom_point(aes(colour=Type, shape=Type), size=1) + 
   # Annotations
   annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.9, family=chosenFont, size=3,
-           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(C[t*\"'\"])*': '*",sprintf("%.3f", MAE_MC*100), "*'%'"), parse=T) + 
+           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(C[t*\"'\"])*': '*",sprintf("%.4f", MAE_MC*100), "*'%'"), parse=T) + 
   annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.86, family=chosenFont, size=3,
-           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(B[t*\"'\"])*': '*",sprintf("%.3f", MAE_BR*100), "*'%'"), parse=T) + 
+           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(B[t*\"'\"])*': '*",sprintf("%.4f", MAE_BR*100), "*'%'"), parse=T) + 
   annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.82, family=chosenFont, size=3,
-           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(M[t*\"'\"])*': '*",sprintf("%.3f", MAE_MLR*100), "*'%'"), parse=T) +     
+           label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(M[t*\"'\"])*': '*",sprintf("%.4f", MAE_MLR*100), "*'%'"), parse=T) +     
   # Facets & scales
   scale_color_manual(name="", values=vCol, labels=vLabel) + 
   scale_linewidth_manual(name="", values=vSize, labels=vLabel) + scale_linetype_discrete(name="", labels=vLabel) +

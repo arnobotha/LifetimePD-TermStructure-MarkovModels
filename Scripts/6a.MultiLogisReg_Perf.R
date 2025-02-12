@@ -1270,7 +1270,7 @@ proc.time() - ptm # IGNORE: elapsed runtime; 4.8h
 ### RESULTS: All variables are significant
 
 
-# --- Model 3, training set
+# --- Model 3a, training set
 modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
                               BalanceToPrincipal + InterestRate_Margin + 
                               g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
@@ -1279,7 +1279,20 @@ modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop 
                               CreditLeverage_Aggr + slc_acct_pre_lim_perc_imputed_med, 
                             data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
 evalMLR(modMLR_perf, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
-### RESULTS: AIC: ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC: 884,41; McFadden R^2:  24.28%; AUC:  76.66%
+
+
+
+# --- Model 3b, training set, with natural splines, applied using expert judgement
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+                          ns(BalanceToPrincipal,3) + ns(InterestRate_Margin,3) + 
+                          g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
+                          StateSpell_Num_Total + ns(slc_acct_roll_ever_24_imputed_mean,5) + 
+                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
+                          CreditLeverage_Aggr + ns(slc_acct_pre_lim_perc_imputed_med,4), 
+                        data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
+evalMLR(modMLR_perf, modMLR_base, datCredit_train[MarkovStatus=="Perf",], targetFld="Target_FromP", predClass="Perf")
+### RESULTS: AIC: 855,732; McFadden R^2:  26.74% ; AUC:  81.65%
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)

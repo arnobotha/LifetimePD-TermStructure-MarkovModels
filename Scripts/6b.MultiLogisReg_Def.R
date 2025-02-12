@@ -774,27 +774,22 @@ ptm <- proc.time() # for runtime calculations (ignore)
 modMLR_full_stepwise <- stepAIC(modMLR_base, scope = list(lower = modMLR_base, upper = modMLR_full), 
                                     direction = "both", k=log(datCredit_train[MarkovStatus=="Def",.N]), maxit=50)
 evalMLR(modMLR_full_stepwise, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-proc.time() - ptm # IGNORE: elapsed runtime;
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+proc.time() - ptm # IGNORE: elapsed runtime; 3.2h
+### RESULTS: AIC:  184,677; McFadden R^2:  27.93%; AUC:  96.21%
 # Selection agrees with intuition in that deselected ones had poor fit statistics
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_full_stepwise, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime;
+proc.time() - ptm # IGNORE: elapsed runtime; 14.6m
 ### RESULTS: All variables are significant
-### FINAL: Selected variables:
+### FINAL: Selected variables: g0_Delinq_fac + slc_acct_arr_dir_3 + TimeInDelinqState + g0_Delinq_Num + 
+# g0_Delinq_SD_9 + slc_acct_roll_ever_24_imputed_mean + pmnt_method_grp + InterestRate_Margin + Principal_Real + 
+# BalanceToPrincipal + AgeToTerm + TimeInStateSpell
 
 
 
 
-
-
-
-
-
-
-### AB: yet to be run ----------------------------------------------------------------------------------------------
 
 # ------ 6a. Modelling theme: Repo rate
 
@@ -802,46 +797,47 @@ proc.time() - ptm # IGNORE: elapsed runtime;
 modMLR_single_sub <- multinom(Target_FromD ~ M_Repo_Rate, 
                               data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_single_sub, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,902; McFadden R^2:  0.08%; AUC:  52.02%
 
 # --- Full-model| Stepwise forward selection procedure
 modMLR_full <- multinom(Target_FromD ~ M_Repo_Rate + M_Repo_Rate_1 + M_Repo_Rate_2 + M_Repo_Rate_3 +
                               M_Repo_Rate_6 + M_Repo_Rate_9 + M_Repo_Rate_12, 
                             data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_full, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,129; McFadden R^2:  0.39% ; AUC:  52.99%
 
 # - Stepwise forward selection using BIC
 ptm <- proc.time() # for runtime calculations (ignore)
 modMLR_full_stepwise <- stepAIC(modMLR_single_sub, scope = list(lower = modMLR_single_sub, upper = modMLR_full), 
                                     direction = "both", k=log(datCredit_train[MarkovStatus=="Def",.N]), maxit=50)
 evalMLR(modMLR_full_stepwise, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-proc.time() - ptm # IGNORE: elapsed runtime; 
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+proc.time() - ptm # IGNORE: elapsed runtime; 2.7m
+### RESULTS: AIC:  255,158; McFadden R^2:  0.37%; AUC:  52.62%
 # Selection agrees with intuition in that deselected ones had poor fit statistics
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_full_stepwise, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime;
+proc.time() - ptm # IGNORE: elapsed runtime; <1m
 ### RESULTS: All variables are significant
-### FINAL: Selected variables: M_Repo_Rate + M_Repo_Rate_12  + M_Repo_Rate_2   
+### FINAL: Selected variables: M_Repo_Rate + M_Repo_Rate_12  + M_Repo_Rate_6   
 
 
 
 # --- Single-factor models: various lag orders
-# - M_Repo_Rate_2
-modMLR <- multinom(Target_FromD ~  M_Repo_Rate_2, 
+# - M_Repo_Rate_6
+modMLR <- multinom(Target_FromD ~  M_Repo_Rate_6, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,934; McFadden R^2:  0.07%; AUC:  52.44%
 
 # - M_Repo_Rate_12
 modMLR <- multinom(Target_FromD ~  M_Repo_Rate_12, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
-# 'Strongest' variable: M_Repo_Rate
+### RESULTS: AIC:  255,809; McFadden R^2:  0.11%; AUC:  52.16%
+# 'Strongest' variable: M_Repo_Rate_12 + M_Repo_Rate
+
 
 
 
@@ -852,46 +848,47 @@ evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="T
 modMLR_single_sub <- multinom(Target_FromD ~ M_Inflation_Growth, 
                               data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_single_sub, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,977; McFadden R^2:  0.03%; AUC:  51.80%
 
 # --- Full-model | Stepwise forward selection procedure
 modMLR_full <- multinom(Target_FromD ~ M_Inflation_Growth + M_Inflation_Growth_1 + M_Inflation_Growth_2 + M_Inflation_Growth_3 +
                               M_Inflation_Growth_6 + M_Inflation_Growth_9 + M_Inflation_Growth_12, 
                             data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_full, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,423; McFadden R^2:  0.28% ; AUC:  52.76%
 
 # - Stepwise forward selection using BIC
 ptm <- proc.time() # for runtime calculations (ignore)
 modMLR_full_stepwise <- stepAIC(modMLR_single_sub, scope = list(lower = modMLR_single_sub, upper = modMLR_full), 
                                     direction = "both", k=log(datCredit_train[MarkovStatus=="Def",.N]), maxit=50)
 evalMLR(modMLR_full_stepwise, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-proc.time() - ptm # IGNORE: elapsed runtime;
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+proc.time() - ptm # IGNORE: elapsed runtime; 2.9m
+### RESULTS: AIC:  255,420; McFadden R^2:  0.27%; AUC:  52.69%
 # Selection agrees with intuition in that deselected ones had poor fit statistics
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_full_stepwise, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime;
+proc.time() - ptm # IGNORE: elapsed runtime; <1m
 ### RESULTS: All variables are significant
-### FINAL: Selected variables:  M_Inflation_Growth + M_Inflation_Growth_2 + M_Inflation_Growth_12
+### FINAL: Selected variables:  M_Inflation_Growth + M_Inflation_Growth_6 + M_Inflation_Growth_12
 
 
 
 # --- Single-factor models: various lag orders
-# - M_Inflation_Growth_2
-modMLR <- multinom(Target_FromD ~  M_Inflation_Growth_2, 
+# - M_Inflation_Growth_6
+modMLR <- multinom(Target_FromD ~  M_Inflation_Growth_6, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,989; McFadden R^2:  0.04% ; AUC:  51.27%
 
 # - M_Inflation_Growth_12
 modMLR <- multinom(Target_FromD ~  M_Inflation_Growth_12, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
-# 'Strongest' variable: M_Inflation_Growth_2 + M_Inflation_Growth_12
+### RESULTS: AIC:  255,743; McFadden R^2:  0.14% ; AUC:  50.39%
+# 'Strongest' variable: M_Inflation_Growth_6 + M_Inflation_Growth_12
+
 
 
 
@@ -902,46 +899,47 @@ evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="T
 modMLR_single_sub <- multinom(Target_FromD ~ M_RealGDP_Growth, 
                               data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_single_sub, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,911; McFadden R^2:  0.07%; AUC: 51.44% 
 
 # --- Full-model | Stepwise forward selection procedure
 modMLR_full <- multinom(Target_FromD ~ M_RealGDP_Growth + M_RealGDP_Growth_1 + M_RealGDP_Growth_2 + M_RealGDP_Growth_3 +
                               M_RealGDP_Growth_6 + M_RealGDP_Growth_9 + M_RealGDP_Growth_12, 
                             data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_full, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,704; McFadden R^2:  0.17%; AUC:  53.34%
 
 # - Stepwise forward selection using BIC
 ptm <- proc.time() # for runtime calculations (ignore)
 modMLR_full_stepwise <- stepAIC(modMLR_single_sub, scope = list(lower = modMLR_single_sub, upper = modMLR_full), 
                                     direction = "both", k=log(datCredit_train[MarkovStatus=="Def",.N]), maxit=50)
 evalMLR(modMLR_full_stepwise, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-proc.time() - ptm # IGNORE: elapsed runtime;
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+proc.time() - ptm # IGNORE: elapsed runtime; 2.5m
+### RESULTS: AIC:  255,710 ; McFadden R^2:  0.16%; AUC:  53.10%
 # Selection agrees with intuition in that deselected ones had poor fit statistics
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_full_stepwise, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime; 
+proc.time() - ptm # IGNORE: elapsed runtime; <1m
 ### RESULTS: All variables are significant
-### FINAL: Selected variables:  M_RealGDP_Growth + M_RealGDP_Growth_9 + M_RealGDP_Growth_12
+### FINAL: Selected variables:  M_RealGDP_Growth + M_RealGDP_Growth_1 + M_RealGDP_Growth_12
 
 
 
 # --- Single-factor models: various lag orders
-# - M_RealGDP_Growth_9
-modMLR <- multinom(Target_FromD ~  M_RealGDP_Growth_9, 
+# - M_RealGDP_Growth_1
+modMLR <- multinom(Target_FromD ~  M_RealGDP_Growth_1, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,920; McFadden R^2:  0.07%; AUC:  51.80%
 
 # - M_RealGDP_Growth_12
 modMLR <- multinom(Target_FromD ~  M_RealGDP_Growth_12, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
-# 'Strongest' variable: M_RealGDP_Growth_12
+### RESULTS: AIC:  255,908; McFadden R^2:  0.08%; AUC:  52.95%
+# 'Strongest' variable: M_RealGDP_Growth_12 + M_RealGDP_Growth_1
+
 
 
 
@@ -952,51 +950,40 @@ evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="T
 modMLR_single_sub <- multinom(Target_FromD ~ M_RealIncome_Growth, 
                               data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_single_sub, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,760; McFadden R^2:  0.13%; AUC:  51.15%
 
 # --- Full-model | Stepwise forward selection procedure
 modMLR_full <- multinom(Target_FromD ~ M_RealIncome_Growth + M_RealIncome_Growth_1 + M_RealIncome_Growth_2 + M_RealIncome_Growth_3 + 
                               M_RealIncome_Growth_6 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12, 
                             data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_full, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,448; McFadden R^2:  0.27%; AUC:  54.01%
 
 # - Stepwise forward selection using BIC
 ptm <- proc.time() # for runtime calculations (ignore)
 modMLR_full_stepwise <- stepAIC(modMLR_single_sub, scope = list(lower = modMLR_single_sub, upper = modMLR_full), 
                                     direction = "both", k=log(datCredit_train[MarkovStatus=="Def",.N]), maxit=50)
 evalMLR(modMLR_full_stepwise, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-proc.time() - ptm # IGNORE: elapsed runtime;
-### RESULTS: AIC: ; McFadden R^2:  ; AUC:  
+proc.time() - ptm # IGNORE: elapsed runtime; 1.6m
+### RESULTS: AIC: 255,487; McFadden R^2:  0.24%; AUC:  53.81%
 # Selection agrees with intuition in that deselected ones had poor fit statistics
 
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_full_stepwise, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime;
+proc.time() - ptm # IGNORE: elapsed runtime; <1m
 ### RESULTS: All variables are significant
-### FINAL: Selected variables:  M_RealIncome_Growth + M_RealIncome_Growth_1 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12
+### FINAL: Selected variables:  M_RealIncome_Growth + M_RealIncome_Growth_12
 
 
 
 # --- Single-factor models: various lag orders
-# - M_RealIncome_Growth_1
-modMLR <- multinom(Target_FromD ~  M_RealIncome_Growth_1,
-                   data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
-evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
-
-# - M_RealIncome_Growth_9
-modMLR <- multinom(Target_FromD ~  M_RealIncome_Growth_9, 
-                   data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
-evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
 
 # - M_RealIncome_Growth_12
 modMLR <- multinom(Target_FromD ~  M_RealIncome_Growth_12, 
                    data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,775; McFadden R^2:  0.13%; AUC:  53.56%
 # 'Strongest' variable: M_RealIncome_Growth_12
 
 
@@ -1008,14 +995,14 @@ evalMLR(modMLR, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="T
 modMLR_single_sub <- multinom(Target_FromD ~ M_DTI_Growth, 
                               data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_single_sub, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,878; McFadden R^2:  0.09%; AUC:  52.27%
 
 # --- Full-model | Stepwise forward selection procedure
 modMLR_full <- multinom(Target_FromD ~ M_DTI_Growth + M_DTI_Growth_1 + M_DTI_Growth_2 + M_DTI_Growth_3 + 
                               M_DTI_Growth_6 + M_DTI_Growth_9 + M_DTI_Growth_12, 
                             data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 evalMLR(modMLR_full, modMLR_base, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
-### RESULTS: AIC:  ; McFadden R^2:  ; AUC:  
+### RESULTS: AIC:  255,153; McFadden R^2:  0.38%; AUC:  53.74%
 
 # - Stepwise forward selection using BIC
 ptm <- proc.time() # for runtime calculations (ignore)
@@ -1035,6 +1022,9 @@ proc.time() - ptm # IGNORE: elapsed runtime;
 
 
 
+
+
+### AB: yet to be run ----------------------------------------------------------------------------------------------
 # --- Single-factor models: various lag orders
 # - M_DTI_Growth_1
 modMLR <- multinom(Target_FromD ~  M_DTI_Growth_1, 
