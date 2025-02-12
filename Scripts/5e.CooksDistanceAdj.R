@@ -40,7 +40,7 @@ cat("MAE = ",round(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_Perf
 DW_Final<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
                     M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean +
                     PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
-                  data=datAggr_train, link=optimal_link)
+                  data=datAggr_train, link="loglog")
 summary(DW_Final)
 ### AB: Problems
 DW_Final$pseudo.r.squared # Pseudo R2 = 0.3910874
