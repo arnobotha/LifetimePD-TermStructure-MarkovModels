@@ -1,4 +1,4 @@
-# ====================================== MODEL COMPARISON: PERF-DEF ====================================
+# ==================================== MODEL COMPARISON: PERFORMING ====================================
 # Fit finalised models (Markov, BR, MLR) for a specific transition type towards comparing the 
 # transition rate over calendar time
 # ------------------------------------------------------------------------------------------------------
@@ -20,7 +20,7 @@
 #   - datCredit_valid | Validation set, created from subsampled set from 3b
 #
 # -- Outputs:
-#   - <Analytics> | Diagnostics
+#   - <Analytics> | Transition rate time graphs
 # ------------------------------------------------------------------------------------------------------
 
 
@@ -46,18 +46,50 @@ if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"),
 datResults_MC <- Markov_TPM(DataSetMC=datCredit_smp,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
 
 
-# --- Beta regression (BR) model | Performing
-suppressWarnings(rm(PD_Final)); unpack.ffdf(paste0(genObjPath,"BR_P_To_D"), tempPath)
-summary(PD_Final)
-PD_Final$pseudo.r.squared # Pseudo R2 = 0.8723582
-AIC(PD_Final) # AIC = -2446.269
-cat("MAE = ",round(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03795%
+# --- Beta regression (BR) models
+
+# - Load BR models from stored objects
+if(!exists('PD_Final')) unpack.ffdf(paste0(genObjPath,"BR_P_To_D"), tempPath)
+if(!exists('PP_Final')) unpack.ffdf(paste0(genObjPath,"BR_P_To_P"), tempPath)
+if(!exists('PS_Final')) unpack.ffdf(paste0(genObjPath,"BR_P_To_S"), tempPath)
+if(!exists('DD_Final')) unpack.ffdf(paste0(genObjPath,"BR_D_To_D"), tempPath)
+if(!exists('DS_Final')) unpack.ffdf(paste0(genObjPath,"BR_D_To_S"), tempPath)
+if(!exists('DW_Final')) unpack.ffdf(paste0(genObjPath,"BR_D_To_W"), tempPath)
+
 
 
 # --- Multinomial Logistic Regression (MLR) model
-modMLR_perf <- multinom(Target_FromP ~ 1)
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+                          ns(BalanceToPrincipal,3) + ns(InterestRate_Margin,3) + 
+                          ns(g0_Delinq_Num,5) + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
+                          StateSpell_Num_Total + ns(slc_acct_roll_ever_24_imputed_mean,5) + 
+                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
+                          CreditLeverage_Aggr + ns(slc_acct_pre_lim_perc_imputed_med,4), 
+                        data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
 
-# Render loan-level predictions
+
+
+# ------ 3. Render predictions from fitted models
+
+# --- Beta regression: Scaling approach
+# NOTE: Scale by a single-factor z towards forcing row sums in transition matrix to equal 1
+
+# - Calculate vector of denominators, whilst substituting missing BR-models with actual observations (PW + DP)
+Denom_P <- predict(PD_Final,datAggr_valid) + predict(PP_Final,datAggr_valid) + predict(PS_Final,datAggr_valid) + datAggr_train$Y_PerfToWO
+Denom_D <- predict(DD_Final,datAggr_valid) + predict(DS_Final,datAggr_valid) + predict(DW_Final,datAggr_valid) + datAggr_train$Y_DefToPerf
+
+# - Create data object of scaled predictions from the BR-models, having used the validation dataset
+datPred_Scaled <- data.table(Date=datAggr_valid$Date,
+                             p_PD=predict(PD_Final,datAggr_valid)/Denom_P, p_PS=predict(PS_Final,datAggr_valid)/Denom_P,
+                             p_PP=predict(PP_Final,datAggr_valid)/Denom_P, p_PW=datAggr_train$Y_PerfToWO/Denom_P,
+                             p_DD=predict(DD_Final,datAggr_valid), p_DD2=predict(DD_Final,datAggr_valid)/Denom_D,
+                             p_DW=predict(DW_Final,datAggr_valid), p_DW2=predict(DW_Final,datAggr_valid)/Denom_D,
+                             p_DS=predict(DS_Final,datAggr_valid), p_DS2=predict(DS_Final,datAggr_valid)/Denom_D,
+                             p_DP=1-predict(DS_Final,datAggr_valid)-predict(DD_Final,datAggr_valid)-predict(DW_Final,datAggr_valid),
+                             p_DP2=datAggr_train$Y_DefToPerf/Denom_D)
+
+
+# --- MLR-models
 datAggr_valid[MarkovStatus=="Perf", pred_MLR := predict(modMLR_perf, newdata=datAggr_valid[MarkovStatus=="Perf",], type="probs")[,"Def"]]
 
 

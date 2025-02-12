@@ -34,7 +34,11 @@ if (!exists('datCredit_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid"), 
 
 # - Distributional analyses
 describe(datCredit_train[MarkovStatus=="Perf",Target_FromP]) # Dominant class: Performing
+# Value         Perf     Def     Set   W_Off
+# Frequency  9020554   27184   66643     434
 describe(datCredit_train[MarkovStatus=="Def",Target_FromD]) # Dominant class: Default
+# Value         Def   Perf    Set  W_Off
+# Frequency  457448  12810   7108   6000
 
 # - Fit an empty model as a performance gain, used within some diagnostic functions
 modMLR_base_perf <- multinom(Target_FromP ~  1, 
@@ -93,15 +97,16 @@ plotROC <- function(actuals, predictions, label, chosenFont="Cambria", fileName=
 
 # --- Performing MLR-model
 modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
-                              BalanceToPrincipal + InterestRate_Margin + 
-                              g0_Delinq_Num + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
-                              StateSpell_Num_Total + slc_acct_roll_ever_24_imputed_mean + 
-                              M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate , 
-                            data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
+                          ns(BalanceToPrincipal,3) + ns(InterestRate_Margin,3) + 
+                          ns(g0_Delinq_Num,5) + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
+                          StateSpell_Num_Total + ns(slc_acct_roll_ever_24_imputed_mean,5) + 
+                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
+                          CreditLeverage_Aggr + ns(slc_acct_pre_lim_perc_imputed_med,4), 
+                        data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
 
 # - AIC & McFadden R^2
-(result1 <- comma(AIC(modMLR_perf))) # 897,469
-(result2 <- coefDeter_glm(modMLR_perf, modMLR_base_perf))  # 23.16%
+(result1 <- comma(AIC(modMLR_perf))) # 853,356
+(result2 <- coefDeter_glm(modMLR_perf, modMLR_base_perf))  # 26.95%
 
 
 # - Statistical significance: Likelihood Ratio Test
@@ -122,7 +127,7 @@ rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="
 rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Performing to Default")
 rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Performing to Settlement")
 rocResult <- plotROC(actuals=actuals_woff, predictions=matPred[,"W_Off"], label="Performing to Write-off")
-# AUC (P):  74.99% ± 0.188%; AUC (D):  97.48% ± 0.139%; AUC (S):  66.61% ± 0.226%; AUC (W):  91.94% ± 1.288%
+# AUC (P):  81.66% ± 0.141%; AUC (D):  98.20% ± 0.096%; AUC (S):  75.95% ± 0.169%; AUC (W):  93.42% ± 1.032%
 
 # - ROC-analyses & AUC-statistics: Preparation | Out-of-sample
 matPred <- predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Perf",], type="probs")
@@ -136,7 +141,11 @@ rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="
 rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Performing to Default", fileName=paste0(genFigPath, "ROC-PerfDef_DV"))
 rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Performing to Settlement", fileName=paste0(genFigPath, "ROC-PerfSet_DV"))
 rocResult <- plotROC(actuals=actuals_woff, predictions=matPred[,"W_Off"], label="Performing to Write-off", fileName=paste0(genFigPath, "ROC-PerfWOff_DV"))
-# AUC (P):  74.94% ± 0.270%; AUC (D):  97.53% ± 0.201%; AUC (S):  66.81% ± 0.324%; AUC (W):  92.16% ± 1.702%
+# AUC (P):  81.62% ± 0.204%; AUC (D):  98.23% ± 0.136%; AUC (S):  76.10% ± 0.243%; AUC (W):  93.77% ± 1.381%
+
+
+
+# --- Default MLR-model
 
 
 
