@@ -1297,7 +1297,7 @@ evalMLR(modMLR_perf, modMLR_base_perf, datCredit_train[MarkovStatus=="Perf",], t
 # - Statistical significance: Likelihood Ratio Test
 ptm <- proc.time() # for runtime calculations (ignore)
 modLR_Result <- dropterm(modMLR_perf, trace=F, test="Chisq", maxit=50)
-proc.time() - ptm # IGNORE: elapsed runtime; 6.9h
+proc.time() - ptm # IGNORE: elapsed runtime; 8.1h
 ### RESULTS: All variables are significant
 
 

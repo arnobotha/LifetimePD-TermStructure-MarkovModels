@@ -58,14 +58,23 @@ if(!exists('DW_Final')) unpack.ffdf(paste0(genObjPath,"BR_D_To_W"), tempPath)
 
 
 
-# --- Multinomial Logistic Regression (MLR) model
-modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+# --- Multinomial Logistic Regression (MLR) models
+# - Performing
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + ns(CreditLeverage_Aggr,3) +
                           ns(BalanceToPrincipal,3) + ns(InterestRate_Margin,3) + 
                           ns(g0_Delinq_Num,5) + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
                           StateSpell_Num_Total + ns(slc_acct_roll_ever_24_imputed_mean,5) + 
-                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
-                          CreditLeverage_Aggr + ns(slc_acct_pre_lim_perc_imputed_med,4), 
+                          M_Emp_Growth + M_Inflation_Growth_2 + ns(M_Repo_Rate,3) + 
+                          ns(slc_acct_pre_lim_perc_imputed_med,4), 
                         data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
+
+# - Default
+modMLR_def <- multinom(Target_FromD ~ DefaultStatus1_Aggr_Prop_Lag_5 + CreditLeverage_Aggr + g0_Delinq_Ave + 
+                         g0_Delinq_fac + slc_acct_arr_dir_3 + TimeInDelinqState + g0_Delinq_Num + g0_Delinq_SD_9 + 
+                         ns(slc_acct_roll_ever_24_imputed_mean,6) + pmnt_method_grp + ns(InterestRate_Margin,3) + Principal_Real + 
+                         BalanceToPrincipal + AgeToTerm + TimeInStateSpell + 
+                         M_Repo_Rate + M_RealGDP_Growth_12 + M_DTI_Growth + M_Inflation_Growth_6, 
+                       data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
 
 
 
@@ -100,10 +109,11 @@ datCredit_valid[MarkovStatus=="Perf", pred_MLR_PD := predict(modMLR_perf, newdat
 datCredit_valid[MarkovStatus=="Perf", pred_MLR_PP := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Perf",], type="probs")[,"Perf"]]
 datCredit_valid[MarkovStatus=="Perf", pred_MLR_PS := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Perf",], type="probs")[,"Set"]]
 datCredit_valid[MarkovStatus=="Perf", pred_MLR_PW := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Perf",], type="probs")[,"W_Off"]]
-datCredit_valid[MarkovStatus=="Def", pred_MLR_DD := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Def"]]
-datCredit_valid[MarkovStatus=="Def", pred_MLR_DW := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"W_Off"]]
-datCredit_valid[MarkovStatus=="Def", pred_MLR_DS := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Set"]]
-datCredit_valid[MarkovStatus=="Def", pred_MLR_DP := predict(modMLR_perf, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Perf"]]
+datCredit_valid[MarkovStatus=="Def", pred_MLR_DD := predict(modMLR_def, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Def"]]
+datCredit_valid[MarkovStatus=="Def", pred_MLR_DW := predict(modMLR_def, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"W_Off"]]
+datCredit_valid[MarkovStatus=="Def", pred_MLR_DS := predict(modMLR_def, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Set"]]
+datCredit_valid[MarkovStatus=="Def", pred_MLR_DP := predict(modMLR_def, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")[,"Perf"]]
+
 
 
 
@@ -112,15 +122,16 @@ datCredit_valid[MarkovStatus=="Def", pred_MLR_DP := predict(modMLR_perf, newdata
 
 # --- Custom graphing logic 
 # data objects: datMC, datBR, datMLR.
-# field names: gvnRef_From, gvnRef_To, gvnFldPred_BR, gvnFldPred_MLR, gvnFldPred_MLR, gvnFldAct_MLR
+# field names: gvnRef_From, gvnRef_To, gvnFldPred_BR, gvnFldPred_MLR, gvnFldAct_BR, gvnFldAct_MLR
 # graphing options: chosenFont, vCol, vSize, vShape, vLabel, dpi
 graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_To, gvnFldPred_BR, gvnFldPred_MLR, gvnFldAct_BR, 
-                           gvnFldAct_MLR, chosenFont="Cambria", vCol="", vSize="", vShape="", vLabel="", dpi=200, fileName="") {
+                           gvnFldAct_MLR, chosenFont="Cambria", vCol="", vSize="", vShape="", vLabel="", yLabel="", dpi=180, annoX="", annoY="", fileName="") {
   # - Testing conditions
-  # datMC=datResults_MC; datBR=datPred_Scaled; datMLR=datCredit_valid; dteStart=dteStart; gvnRef_From="Perf"
-  # gvnRef_To="Def"; gvnFldPred_BR="p_PD"; gvnFldPred_MLR="pred_MLR_PD"; gvnFldAct_BR="a_PD"; gvnFldAct_MLR="Y_PerfToDef_Sub"
+  # datMC=datResults_MC; datBR=datPred_Scaled; datMLR=datCredit_valid; dteStart=as.Date("2007-06-30"); gvnRef_From="Def"
+  # gvnRef_To="Perf"; gvnFldPred_BR="p_DP"; gvnFldPred_MLR="pred_MLR_DP"; gvnFldAct_BR="a_DP"; gvnFldAct_MLR="Y_DefToPerf_Sub"
+  # vSize=""; vCol=""; vShape="";  vLabel=""; fileName=paste0(genFigPath, "TransRate_DP.png")
   
-  require(RColorBrewer)
+  require(RColorBrewer); require(scales); require(ggplot2); require(data.table)
   
   # - Preliminarnies
   if(all(vCol=="")) {
@@ -136,20 +147,26 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
     vLabel <- c("a_Actual"=bquote(italic(A[t*"'"])*': Actual'), "b_MC"=bquote(italic(C[t*"'"])*': Markov Chain'),
       "c_BR"=bquote(italic(B[t*"'"])*': Beta Regression'),"d_MLR"=bquote(italic(M[t*"'"])*': Multinomial Logistic Regression'))
   }
+  if (all(is.na(annoX)) | !is.na(all(annoX==""))) {
+    annoX <- as.Date("2016-12-31")
+  }
+  if (all(annoY=="")) {
+    annoY <- c(0.9, 0.86, 0.82)
+  }
   
   
   # - Collate predictions into common format for graphing purposes
   # NOTE: The structure of the given data objects (datMC, datBR, datMLR) are assumed to be known, just as an expediency
   pred_MC <- datMC[gvnRef_From,gvnRef_To]/100
   pred_BR <- datBR[Date >= dteStart & Date<maxDate_observed, ][[gvnFldPred_BR]]
-  pred_MLR <- datMLR[MarkovStatus==gvnRef_MRL & Date<maxDate_observed & Date >= dteStart, list(TransRate = mean(get(gvnFldPred_MLR))), 
+  pred_MLR <- datMLR[MarkovStatus==gvnRef_From & Date<maxDate_observed & Date >= dteStart, list(TransRate = mean(get(gvnFldPred_MLR),na.rm=T)), 
                               by=list(Date)]$TransRate
   
   
   # --- Graphing logic
   
   # - Aggregate to portfolio-level
-  datAggr_sub <- datMLR[Date<maxDate_observed & Date >= dteStart & MarkovStatus==gvnRef_MRL,
+  datAggr_sub <- datMLR[Date<maxDate_observed & Date >= dteStart & MarkovStatus==gvnRef_From,
                                  list(TransRate = mean(get(gvnFldAct_MLR),na.rm=T), Type="a_Actual"),by=list(Date)]
   
   # - Merge Actuals and Predictions
@@ -160,7 +177,7 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
   
   # - Actuals
   actual_sub <- datAggr_sub$TransRate
-  actual_BR_PD <- datBR[[gvnFldAct_BR]]
+  actual_BR_PD <- datBR[Date<maxDate_observed & Date >= dteStart, get(gvnFldAct_BR)]
   
   # - Calculate MAEs
   (MAE_MC <- round(mean(abs(actual_sub-pred_MC)),7))
@@ -169,7 +186,7 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
   
   # - Create graph
   (g <- ggplot(datAggr, aes(x=Date, y=TransRate, group=Type)) + theme_minimal() + 
-      labs(x=bquote("Calendar date (months) "*italic(t*"'")), y="1-month transition rate: Performing to Default", family=chosenFont) + 
+      labs(x=bquote("Calendar date (months) "*italic(t*"'")), y=paste0("1-month transition rate: ", yLabel), family=chosenFont) + 
       theme(text=element_text(family=chosenFont),legend.position = "bottom",legend.margin=margin(-8, 0, 0, 0),
             axis.text.x=element_text(angle=90), 
             strip.background=element_rect(fill="snow2", colour="snow2"),
@@ -177,11 +194,11 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
       geom_line(aes(colour=Type, linewidth=Type, linetype=Type)) + 
       geom_point(aes(colour=Type, shape=Type), size=1) + 
       # Annotations
-      annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.9, family=chosenFont, size=3,
+      annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[1], family=chosenFont, size=4,
                label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(C[t*\"'\"])*': '*",sprintf("%.4f", MAE_MC*100), "*'%'"), parse=T) + 
-      annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.86, family=chosenFont, size=3,
+      annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[2], family=chosenFont, size=4,
                label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(B[t*\"'\"])*': '*",sprintf("%.4f", MAE_BR*100), "*'%'"), parse=T) + 
-      annotate(geom="text", x = as.Date("2015-07-31"), y = max(datAggr_sub$TransRate)*0.82, family=chosenFont, size=3,
+      annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[3], family=chosenFont, size=4,
                label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(M[t*\"'\"])*': '*",sprintf("%.4f", MAE_MLR*100), "*'%'"), parse=T) +     
       # Facets & scales
       scale_color_manual(name="", values=vCol, labels=vLabel) + 
@@ -190,8 +207,13 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
       scale_x_date(date_breaks=paste0(6, " month"), date_labels = "%b %Y") +
       scale_y_continuous(breaks=pretty_breaks(), labels=percent))
   
+  if (fileName != "") {
+    ggsave(g, file=fileName, width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white") 
+  }
+  
   return(lst(MC=pred_MC, BR=pred_BR, MLR=pred_MLR,
-             MC_MAE=MAE_MC, BR_MAE=MAE_BR, MLR_MAE=MAE_MLR, Plot=g))
+             MC_MAE=percent(MAE_MC,accuracy=0.001), BR_MAE=percent(MAE_BR,accuracy=0.001), MLR_MAE=percent(MAE_MLR,accuracy=0.001), Plot=g,
+             MC_MAE_raw = MAE_MC, BR_MAE_raw=MAE_BR, MLR_MAE_raw=MAE_MLR))
   
   # - Cleanup, useful when run interactively and during debugging
   rm(datMC,datBR,datMLR,gvnRef_From,gvnRef_To,gvnFldPred_BR,gvnFldPred_MLR,gvnFldAct_BR,gvnFldAct_MLR, g)
@@ -200,22 +222,78 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
 
 
 # --- Transition rate graphs
-lstPred <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=dteStart, gvnRef_From="Perf", 
+
+# -- Performing start state
+# - Performing to Default
+lstPred_PD <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
                           gvnRef_To="Def", gvnFldPred_BR="p_PD", gvnFldPred_MLR="pred_MLR_PD", gvnFldAct_BR="a_PD", gvnFldAct_MLR="Y_PerfToDef_Sub",
-                          fileName=paste0(genFigPath, "TransRate_PD.png"))
+                          fileName=paste0(genFigPath, "TransRate_PD.png"), yLabel="Performing to Default")
+
+# - Performing to Performing
+lstPred_PP <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+                             gvnRef_To="Perf", gvnFldPred_BR="p_PP", gvnFldPred_MLR="pred_MLR_PP", gvnFldAct_BR="a_PP", gvnFldAct_MLR="Y_PerfToPerf_Sub",
+                             fileName=paste0(genFigPath, "TransRate_PP.png"), annoY=c(0.999,0.998,0.997), yLabel="Performing to Performing")
+
+# - Performing to Settlement
+lstPred_PS <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+                             gvnRef_To="Set", gvnFldPred_BR="p_PS", gvnFldPred_MLR="pred_MLR_PS", gvnFldAct_BR="a_PS", gvnFldAct_MLR="Y_PerfToSet_Sub",
+                             fileName=paste0(genFigPath, "TransRate_PS.png"), annoY=c(0.97,0.92,0.87), yLabel="Performing to Settlement")
+
+# - Performing to Write-off
+lstPred_PW <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+                             gvnRef_To="W_Off", gvnFldPred_BR="p_PW", gvnFldPred_MLR="pred_MLR_PW", gvnFldAct_BR="a_PW", gvnFldAct_MLR="Y_PerfToWO_Sub",
+                             fileName=paste0(genFigPath, "TransRate_PW.png"), annoY=c(1.01,0.96,0.91), yLabel="Performing to Write-off")
 
 
+# -- Default start state
+# - Default to Default
+lstPred_DD <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+                          gvnRef_To="Def", gvnFldPred_BR="p_DD", gvnFldPred_MLR="pred_MLR_DD", gvnFldAct_BR="a_DD", gvnFldAct_MLR="Y_DefToDef_Sub",
+                          fileName=paste0(genFigPath, "TransRate_DD.png"), annoY=c(0.998,0.995,0.992), annoX=as.Date("2013-01-31"), yLabel="Default to Default")
+
+# - Default to Write-off
+lstPred_DW <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+                          gvnRef_To="W_Off", gvnFldPred_BR="p_DW", gvnFldPred_MLR="pred_MLR_DW", gvnFldAct_BR="a_DW", gvnFldAct_MLR="Y_DefToWO_Sub",
+                          fileName=paste0(genFigPath, "TransRate_DW.png"), annoY=c(0.99,0.94,0.89), yLabel="Default to Write-off")
+
+# - Default to Settlement
+lstPred_DS <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+                          gvnRef_To="Set", gvnFldPred_BR="p_DS", gvnFldPred_MLR="pred_MLR_DS", gvnFldAct_BR="a_DS", gvnFldAct_MLR="Y_DefToSet_Sub",
+                          fileName=paste0(genFigPath, "TransRate_DS.png"), annoY=c(0.99,0.94,0.89), annoX=as.Date("2012-01-31"), yLabel="Default to Settlement")
+
+# - Default to Performing
+lstPred_DP <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+                          gvnRef_To="Perf", gvnFldPred_BR="p_DP", gvnFldPred_MLR="pred_MLR_DP", gvnFldAct_BR="a_DP", gvnFldAct_MLR="Y_DefToPerf_Sub",
+                          fileName=paste0(genFigPath, "TransRate_DP.png"), annoY=c(0.99,0.94,0.89), annoX=as.Date("2019-05-31"), yLabel="Default to Performing")
 
 
+# --- Improvement in MAE-based AD-statistics (average discrepancy)
+# - Beta regression to Markov chain
+mean( 1-lstPred_PD$BR_MAE_raw / lstPred_PD$MC_MAE_raw, # 59%
+      1-lstPred_PP$BR_MAE_raw / lstPred_PP$MC_MAE_raw, # 34%
+      1-lstPred_PS$BR_MAE_raw / lstPred_PS$MC_MAE_raw, # 29%
+      1-lstPred_PW$BR_MAE_raw / lstPred_PW$MC_MAE_raw, # -9%
+      1-lstPred_DP$BR_MAE_raw / lstPred_DP$MC_MAE_raw, # -24%
+      1-lstPred_DD$BR_MAE_raw / lstPred_DD$MC_MAE_raw, # -7%
+      1-lstPred_DS$BR_MAE_raw / lstPred_DS$MC_MAE_raw, # 22%
+      1-lstPred_DW$BR_MAE_raw / lstPred_DW$MC_MAE_raw) # 29%
+# 58.8% average improvement in AD
 
 
+# - MLSto Markov chain
+mean( 1-lstPred_PD$MLR_MAE_raw / lstPred_PD$MC_MAE_raw, # 64%
+      1-lstPred_PP$MLR_MAE_raw / lstPred_PP$MC_MAE_raw, # 44%
+      1-lstPred_PS$MLR_MAE_raw / lstPred_PS$MC_MAE_raw, # 34%
+      1-lstPred_PW$MLR_MAE_raw / lstPred_PW$MC_MAE_raw, # 13%
+      1-lstPred_DP$MLR_MAE_raw / lstPred_DP$MC_MAE_raw, # 28%
+      1-lstPred_DD$MLR_MAE_raw / lstPred_DD$MC_MAE_raw, # 25%
+      1-lstPred_DS$MLR_MAE_raw / lstPred_DS$MC_MAE_raw, # 38%
+      1-lstPred_DW$MLR_MAE_raw / lstPred_DW$MC_MAE_raw) # 36%
+# 63.6% average improvement in AD
 
 
-# - Save graph
-ggsave(g, file=, width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white")
 
 # --- Cleanup
 rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, datResults_MC, PD_Final,
    modMLR_perf)
 
-expression('"MAE between "*italic(A[t])*" and "*italic(C[t])*": "*')
