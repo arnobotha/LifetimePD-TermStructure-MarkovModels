@@ -1,5 +1,5 @@
 # ==================================== MODEL COMPARISON: MLR-MODELS  ===================================
-# Fit finalised MLR-models, calculate diagnostics, and perform overall analysis of results
+# Fit finalised MLR-models, calculate diagnostics, and analyse overall results (discriminatory power)
 # ------------------------------------------------------------------------------------------------------
 # PROJECT TITLE: Default risk term-structure modelling using Markov-models
 # SCRIPT AUTHOR(S): Dr Arno Botha (AB), Roland Breedt (RB)
@@ -96,12 +96,12 @@ plotROC <- function(actuals, predictions, label, chosenFont="Cambria", fileName=
 # ------ 2. Fit finalised MLR-models
 
 # --- Performing MLR-model
-modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + 
+modMLR_perf <- multinom(Target_FromP ~ g0_Delinq_Ave + DefaultStatus1_Aggr_Prop + ns(CreditLeverage_Aggr,3) +
                           ns(BalanceToPrincipal,3) + ns(InterestRate_Margin,3) + 
                           ns(g0_Delinq_Num,5) + g0_Delinq_SD_6 + g0_Delinq_fac + pmnt_method_grp +
                           StateSpell_Num_Total + ns(slc_acct_roll_ever_24_imputed_mean,5) + 
-                          M_Emp_Growth + M_Inflation_Growth_2 + M_Repo_Rate + 
-                          CreditLeverage_Aggr + ns(slc_acct_pre_lim_perc_imputed_med,4), 
+                          M_Emp_Growth + M_Inflation_Growth_2 + ns(M_Repo_Rate,3) + 
+                          ns(slc_acct_pre_lim_perc_imputed_med,4), 
                         data = datCredit_train[MarkovStatus=="Perf",],maxit=1000)
 
 # - AIC & McFadden R^2
@@ -122,7 +122,7 @@ actuals_def <- ifelse(datCredit_train[MarkovStatus=="Perf",Target_FromP] == "Def
 actuals_stl <- ifelse(datCredit_train[MarkovStatus=="Perf",Target_FromP] == "Set", 1,0)
 actuals_woff <- ifelse(datCredit_train[MarkovStatus=="Perf",Target_FromP] == "W_Off", 1,0)
 
-# - ROC-analyses & AUC-statistics: Results
+# - ROC-analyses & AUC-statistics: Results | In-sample
 rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="Performing to Performing")
 rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Performing to Default")
 rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Performing to Settlement")
@@ -136,7 +136,7 @@ actuals_def <- ifelse(datCredit_valid[MarkovStatus=="Perf",Target_FromP] == "Def
 actuals_stl <- ifelse(datCredit_valid[MarkovStatus=="Perf",Target_FromP] == "Set", 1,0)
 actuals_woff <- ifelse(datCredit_valid[MarkovStatus=="Perf",Target_FromP] == "W_Off", 1,0)
 
-# - ROC-analyses & AUC-statistics: Results
+# - ROC-analyses & AUC-statistics: Results | Out-of-sample
 rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="Performing to Performing", fileName=paste0(genFigPath, "ROC-PerfPerf_DV"))
 rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Performing to Default", fileName=paste0(genFigPath, "ROC-PerfDef_DV"))
 rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Performing to Settlement", fileName=paste0(genFigPath, "ROC-PerfSet_DV"))
@@ -146,6 +146,52 @@ rocResult <- plotROC(actuals=actuals_woff, predictions=matPred[,"W_Off"], label=
 
 
 # --- Default MLR-model
+modMLR_def <- multinom(Target_FromD ~ DefaultStatus1_Aggr_Prop_Lag_5 + CreditLeverage_Aggr + g0_Delinq_Ave + 
+                         g0_Delinq_fac + slc_acct_arr_dir_3 + TimeInDelinqState + g0_Delinq_Num + g0_Delinq_SD_9 + 
+                         ns(slc_acct_roll_ever_24_imputed_mean,6) + pmnt_method_grp + ns(InterestRate_Margin,3) + Principal_Real + 
+                         BalanceToPrincipal + AgeToTerm + TimeInStateSpell + 
+                         M_Repo_Rate + M_RealGDP_Growth_12 + M_DTI_Growth + M_Inflation_Growth_6, 
+                       data = datCredit_train[MarkovStatus=="Def",],maxit=1000)
+evalMLR(modMLR_def, modMLR_base_def, datCredit_train[MarkovStatus=="Def",], targetFld="Target_FromD", predClass="Perf")
+
+# - AIC & McFadden R^2
+(result1 <- comma(AIC(modMLR_def))) # 183,464
+(result2 <- coefDeter_glm(modMLR_def, modMLR_base_def))  # 28.43%
+
+# - Statistical significance: Likelihood Ratio Test
+ptm <- proc.time() # for runtime calculations (ignore)
+modLR_Result <- dropterm(modMLR_def, trace=F, test="Chisq", maxit=50)
+proc.time() - ptm # IGNORE: elapsed runtime; 28.9m
+### RESULTS: All variables are significant
+
+# - ROC-analyses & AUC-statistics: Preparation | In-sample
+matPred <- predict(modMLR_def, newdata=datCredit_train[MarkovStatus=="Def",], type="probs")
+actuals_perf <- ifelse(datCredit_train[MarkovStatus=="Def",Target_FromP] == "Perf", 1,0)
+actuals_def <- ifelse(datCredit_train[MarkovStatus=="Def",Target_FromP] == "Def", 1,0)
+actuals_stl <- ifelse(datCredit_train[MarkovStatus=="Def",Target_FromP] == "Set", 1,0)
+actuals_woff <- ifelse(datCredit_train[MarkovStatus=="Def",Target_FromP] == "W_Off", 1,0)
+
+# - ROC-analyses & AUC-statistics: Results
+rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="Default to Performing")
+rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Default to Default")
+rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Default to Settlement")
+rocResult <- plotROC(actuals=actuals_woff, predictions=matPred[,"W_Off"], label="Default to Write-off")
+# AUC (P):  96.24% ± 0.082%; AUC (D):  78.23% ± 0.328%; AUC (S):  74.87% ± 0.570%; AUC (W):  79.64% ± 0.549%
+
+# - ROC-analyses & AUC-statistics: Preparation | Out-of-sample
+matPred <- predict(modMLR_def, newdata=datCredit_valid[MarkovStatus=="Def",], type="probs")
+actuals_perf <- ifelse(datCredit_valid[MarkovStatus=="Def",Target_FromP] == "Perf", 1,0)
+actuals_def <- ifelse(datCredit_valid[MarkovStatus=="Def",Target_FromP] == "Def", 1,0)
+actuals_stl <- ifelse(datCredit_valid[MarkovStatus=="Def",Target_FromP] == "Set", 1,0)
+actuals_woff <- ifelse(datCredit_valid[MarkovStatus=="Def",Target_FromP] == "W_Off", 1,0)
+
+# - ROC-analyses & AUC-statistics: Results | Out-of-sample
+rocResult <- plotROC(actuals=actuals_perf, predictions=matPred[,"Perf"], label="Default to Performing", fileName=paste0(genFigPath, "ROC-DefPerf_DV"))
+rocResult <- plotROC(actuals=actuals_def, predictions=matPred[,"Def"], label="Default to Default", fileName=paste0(genFigPath, "ROC-DefDef_DV"))
+rocResult <- plotROC(actuals=actuals_stl, predictions=matPred[,"Set"], label="Default to Settlement", fileName=paste0(genFigPath, "ROC-DefSet_DV"))
+rocResult <- plotROC(actuals=actuals_woff, predictions=matPred[,"W_Off"], label="Default to Write-off", fileName=paste0(genFigPath, "ROC-DefWOff_DV"))
+# AUC (P):  96.33% ± 0.119%; AUC (D):  77.94% ± 0.485%; AUC (S):  76.10% ± 0.243%; AUC (W):  93.77% ± 1.381%
+
 
 
 

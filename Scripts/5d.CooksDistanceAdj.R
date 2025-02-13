@@ -48,7 +48,7 @@ PD_Final <- betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Gr
 
 
 # --- Performing to Settlement
-PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
+PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave + M_Emp_Growth + M_Emp_Growth_1 + 
                     CreditLeverage_Aggr + AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link="loglog")
 
 
