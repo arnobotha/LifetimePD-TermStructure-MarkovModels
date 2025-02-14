@@ -628,22 +628,22 @@ AIC(DD_Final_Cnst_Phi) # AIC = -1273.086
 # --- Dynamic Phi
 DD_Final_Dyn_Phi<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                             CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
-                            M_Emp_Growth + ArrearsToBalance_Aggr_Prop| ArrearsToBalance_Aggr_Prop, data=datAggr_train)
+                            M_Emp_Growth + ArrearsToBalance_Aggr_Prop | ArrearsToBalance_Aggr_Prop, data=datAggr_train)
 summary(DD_Final_Dyn_Phi)
 DD_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.3243365
 AIC(DD_Final_Dyn_Phi) # AIC = -1273.302
-### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
-# choose the dynamic phi model as our best.
+### RESULTS: The constant phi model has a better Pseudo R2, whereas the dynamic phi model has the better AIC.
+# We choose the dynamic phi model as our final model towards consistency with the other BR models.
 
 
 # --- Final
 DD_Final<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
-                    M_Emp_Growth + ArrearsToBalance_Aggr_Prop, data=datAggr_train)
+                    M_Emp_Growth + ArrearsToBalance_Aggr_Prop | ArrearsToBalance_Aggr_Prop, data=datAggr_train)
 summary(DD_Final)
-DD_Final$pseudo.r.squared # Pseudo R2 = 0.3251043
-AIC(DD_Final) # AIC = -1273.086
-cat("MAE = ",round(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.81987%
+DD_Final$pseudo.r.squared # Pseudo R2 = 0.3243365
+AIC(DD_Final) # AIC = -1273.302
+cat("MAE = ",round(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.82054%
 
 
 # - Link function on final mu input space
@@ -655,16 +655,16 @@ link_func_stats
 optimal_link<-"loglog"
 ### RESULTS - Ranked links based on Pseudo R2 for links (similar results hold for other measures):
 # 1) loglog; 2) logit; 3) probit; cloglog
-# Results are quite similar as the range of the pseudo r2 is [0.3213379, 0.3253668]
+# Results are quite similar as the range of the pseudo r2 is [0.3209929, 0.3245586]
 
 # - Update link function
 DD_Final<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
-                    M_Emp_Growth + ArrearsToBalance_Aggr_Prop, data=datAggr_train, link=optimal_link)
+                    M_Emp_Growth + ArrearsToBalance_Aggr_Prop  | ArrearsToBalance_Aggr_Prop, data=datAggr_train, link=optimal_link)
 summary(DD_Final)
-DD_Final$pseudo.r.squared # Pseudo R2 =0.3253668
-AIC(DD_Final) # AIC = -1273.042
-cat("MAE = ",round(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.8199%
+DD_Final$pseudo.r.squared # Pseudo R2 = 0.3245586
+AIC(DD_Final) # AIC = -1273.26
+cat("MAE = ",round(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.82056%
 
 
 
@@ -687,7 +687,7 @@ MAEval<-round(mean(abs(predict(DD_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# Pseudo R2 before CD = 0.3253668; After CD = 0.3376245
+# Pseudo R2 before CD = 0.3245586; After CD = 0.3368123
 
 # --- Save Model
 DD_Final<-DD_Adj

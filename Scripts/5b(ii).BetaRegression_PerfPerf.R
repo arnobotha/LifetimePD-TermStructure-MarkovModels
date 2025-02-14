@@ -680,7 +680,8 @@ PP_Final_Dyn_Phi<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Del
 summary(PP_Final_Dyn_Phi)
 PP_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.6431879
 AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
-### RESULTS: Looking at the pseudo R2, the constant phi model is superior and is henceforth used as the final model to tweak the link function on and 
+### RESULTS: Looking at the pseudo R2, the constant phi model is superior, whereas the dynamic phi model has the
+# better AIC. Towards consistency with other BR, the dynamic phi model is henceforth used as the final model to tweak the link function and
 # to perform Cook's distance adjustment.
 
 
@@ -688,11 +689,11 @@ AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
 PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
                     g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9+M_RealIncome_Growth_12 +
                     M_RealGDP_Growth_9+M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3+CreditLeverage_Aggr +
-                    PerfSpell_Maturity_Aggr_Mean, data=datAggr_train)
+                    PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train)
 summary(PP_Final)
-PP_Final$pseudo.r.squared # Pseudo R2 = 0.6434349
-AIC(PP_Final) # AIC = -2005.661
-cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10202%
+PP_Final$pseudo.r.squared # Pseudo R2 = 0.6431879
+AIC(PP_Final) # AIC = -2006.32
+cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10195%
 
 
 # - Link function on final mu input space
@@ -701,20 +702,22 @@ link_func_stats<-rbind(sapply(c("logit", "probit", "cloglog", "loglog"), functio
                        sapply(c("logit", "probit", "cloglog", "loglog"), function(x) update(PP_Final, link = x)$pseudo.r.squared))
 rownames(link_func_stats)<-c("AIC","MAE","Pseudo R^2")
 link_func_stats
-optimal_link<-"cloglog"
+optimal_link<-"loglog"
 ### RESULTS - Ranked links based on Pseudo R2 for links (similar results hold for other measures):
 # 1) cloglog; 2) probit; 3) logit; loglog
-# Results are quite similar as the range of the pseudo r2 is [0.8549787, 0.6709252]
+# Results are quite similar as the range of the pseudo r2 is [0.6425139, 0.6704961]
+# Still use loglog here as optimal link because of the small pseudo R2 difference and towards
+# having more consistency across the beta regression models.
 
 # - Update link function
 PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
                     g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12 +
                     M_RealGDP_Growth_9 + M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +
-                    PerfSpell_Maturity_Aggr_Mean, data=datAggr_train, link=optimal_link)
+                    PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link=optimal_link)
 summary(PP_Final)
-PP_Final$pseudo.r.squared # Pseudo R2 = 0.6709252
-AIC(PP_Final) # AIC = -2005.263
-cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10173%
+PP_Final$pseudo.r.squared # Pseudo R2 = 0.6425139
+AIC(PP_Final) # AIC = -2006.319
+cat("MAE = ",round(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),7)*100,"%",sep="","\n") # MAE = 0.10196%
 
 
 
@@ -736,7 +739,7 @@ MAEval<-round(mean(abs(predict(PP_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# Pseudo R2 before CD = 0.6709252; After CD = 0.7175224
+# Pseudo R2 before CD = 0.6425139; After CD = 0.7004236
 
 # --- Save Model
 PP_Final<-PP_Adj

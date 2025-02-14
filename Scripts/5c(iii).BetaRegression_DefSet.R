@@ -677,7 +677,6 @@ MAEval<-round(mean(abs(predict(DS_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="") # MAE = 0.42294%
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# MAE before CD = 0.42069%; After CD = 0.42294%
 # Pseudo R2 before CD = 0.581419; After CD = 0.6346869
 
 # --- Save Model

@@ -70,16 +70,18 @@ datAggr_D_valid <- datCredit_valid[MarkovStatus=="Def",list(Y_DefToDef=sum(Mark_
                                                             Y_DefToWO=sum(Mark_WO_Ind, na.rm=TRUE)/.N),
                                    by=list(Date)]
 
-
 # -- Merge sets together and create lagged versions of each transition rate
 datAggr_train <- merge(datAggr_P_train, datAggr_D_train, by="Date")
 datAggr_valid <- merge(datAggr_P_valid, datAggr_D_valid, by="Date")
 
+# - Ensure target variable is restricted to (0,1); Only 1 case for Y_DefToWO where the transition rate equals 0
+cat('Nr of y targets where y=0 is', sum(datAggr_train$Y_DefToWO==0),"\n") # 1 case
+datAggr_train[,Y_DefToWO:=ifelse(Y_DefToWO==0,0.00001,Y_DefToWO)]
+
 # - Visual Plot of transition rate
-plot(datAggr_train$Date,datAggr_train$Y_PerfToDef,type="l",ylab="Transition proportions", xlab="Date",main="Performance to performance transitions over time",lwd=2)
+plot(datAggr_train$Date,datAggr_train$Y_PerfToDef,type="l",ylab="Transition proportions", xlab="Date",main="Performance to default transitions over time",lwd=2)
 lines(datAggr_train$Date, datAggr_valid$Y_PerfToDef,col="orange")
 legend(x="topright",legend=c("Training","Validation"),fill=c("black","orange"))
-
 
 # -- Create lagged versions of the transition rate, which are used as input variables.
 # - Training set

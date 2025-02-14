@@ -588,7 +588,7 @@ PD_Final_Dyn_Phi<-betareg(Y_PerfToSet~ g0_Delinq_Any_Aggr_Prop_Lag_2 +
 summary(PD_Final_Dyn_Phi)
 PD_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.4111419
 AIC(PD_Final_Dyn_Phi) # AIC = -1959.427
-### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. The MAE's are basically the same, hence we
+### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. We therefore
 # choose the dynamic phi model as our best.
 
 

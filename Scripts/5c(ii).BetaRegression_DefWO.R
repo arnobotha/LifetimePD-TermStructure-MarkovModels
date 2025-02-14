@@ -591,7 +591,8 @@ DW_Final_Dyn_Phi<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 +
 summary(DW_Final_Dyn_Phi)
 DW_Final_Dyn_Phi$pseudo.r.squared # Pseudo R2 = 0.3044324
 AIC(DW_Final_Dyn_Phi) # AIC = -1515.571
-### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model.
+### RESULTS: The dynamic phi model has a better Pseudo R2 and AIC than the constant phi model. We therefore use the dynamic phi model as our model to tweak
+# going forward.
 
 
 # --- Final
@@ -621,7 +622,7 @@ DW_Final<-betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringE
                     PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
                   data=datAggr_train, link=optimal_link)
 summary(DW_Final)
-DW_Final$pseudo.r.squared # Pseudo R2 = 0.3910874
+DW_Final$pseudo.r.squared # Pseudo R2 = 0.3910887
 AIC(DW_Final) # AIC = -1524.5
 cat("MAE = ",round(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.37035%
 
@@ -646,7 +647,7 @@ MAEval<-round(mean(abs(predict(DW_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# Pseudo R2 before CD = 0.3910874; After CD = 0.3963271
+# Pseudo R2 before CD = 0.3910887; After CD = 0.3963285
 
 # --- Save Model
 DW_Final<-DW_Adj
