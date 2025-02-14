@@ -39,10 +39,6 @@ dpi <- 180
 if (!exists('datAggr_train')) unpack.ffdf(paste0(genPath,"creditdata_train_BR"), tempPath)
 if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"), tempPath)
 
-# - Ensure target variable is restricted to (0,1)
-cat('Nr of y targets where y=0 is', sum(datAggr_train$Y_DefToWO==0),"\n") # 1 case
-datAggr_train[,Y_DefToWO:=ifelse(Y_DefToWO==0,0.00001,Y_DefToWO)] ### AB: Should be moved to script 5a
-
 # - Load BR models from stored objects
 if(!exists('PD_Final')) unpack.ffdf(paste0(genObjPath,"BR_P_To_D"), tempPath)
 if(!exists('PP_Final')) unpack.ffdf(paste0(genObjPath,"BR_P_To_P"), tempPath)
@@ -64,6 +60,11 @@ percent(PD_Final$pseudo.r.squared, accuracy=0.01) # 87.24%
 AIC(PD_Final) # -2446.269
 cat("MAE = ",percent(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_PerfToDef)),accuracy=0.00001),sep="","\n") # 0.03795%
 
+# - Performing to Performing
+summary(PP_Final)
+percent(PP_Final$pseudo.r.squared, accuracy=0.01) # 70.04%
+AIC(PP_Final) # -2446.269
+cat("MAE = ",percent(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),accuracy=0.00001),sep="","\n") #  0.10263%
 
 # - Performing to Settlement
 summary(PS_Final)
@@ -71,12 +72,23 @@ percent(PS_Final$pseudo.r.squared, accuracy=0.01) # 59.97%
 AIC(PS_Final) # -2030.63
 cat("MAE = ",percent(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),accuracy=0.00001),sep="","\n") #  0.09531%
 
+# - Default to Default
+summary(DD_Final)
+percent(DD_Final$pseudo.r.squared, accuracy=0.01) # 33.68%
+AIC(DD_Final) # -1269.948
+cat("MAE = ",percent(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),accuracy=0.00001),sep="","\n") #  0.82782%
 
 # - Default to Settlement
 summary(DS_Final)
 percent(DS_Final$pseudo.r.squared, accuracy=0.01) # 63.47%
 AIC(DS_Final) # -1535.38
 cat("MAE = ",percent(mean(abs(predict(DS_Final,datAggr_valid)-datAggr_valid$Y_DefToSet)),accuracy=0.00001),sep="","\n") #  0.42276%
+
+# - Default to Write-off
+summary(DW_Final)
+percent(DW_Final$pseudo.r.squared, accuracy=0.01) # 39.63%
+AIC(DW_Final) # -1530.126
+cat("MAE = ",percent(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),accuracy=0.00001),sep="","\n") #  0.42276%
 
 
 
@@ -132,18 +144,18 @@ residDW <- residuals(DW_Final,type="pearson")
 residDS <- residuals(DS_Final,type="pearson")
 
 # - Statistical moments of residuals (reporting purposes)
-skewness(residPD) # 0.6873279
-skewness(residPP) # 0.3200913
-skewness(residPS) # -0.8619029
-skewness(residDD) # -0.2588128
-skewness(residDW) # 0.8567572
-skewness(residDS) # 1.405936
+format(skewness(residPD), digits=3) # 0.687
+format(skewness(residPP), digits=3) # 0.161
+format(skewness(residPS), digits=3) # -0.862
+format(skewness(residDD), digits=3) # -0.213
+format(skewness(residDW), digits=3) # 0.857
+format(skewness(residDS), digits=4) # 1.406
 
 
 # --- Graphing logic: custom function
 # NOTE: vCol is assumed to have 3 colours: 1 for historgram, 1 for empirical density, 1 for normal density
 # x_vals & y_vals are positioning coordinates for the annotation (skewness & kurtosis)
-plotPearsonResiduals <- function(residuals, facetLabel, vCol, x_vals, y_vals, fileName="", dpi=200) {
+plotPearsonResiduals <- function(residuals, facetLabel, vCol, x_vals, y_vals, fileName="", dpi=240) {
   # - Testing conditions
   # residuals <- residPD; facetLabel <- "BR-model: Performing to Default"
   # x_vals <- c(2.5,2.5); y_vals <- c(0.4, 0.3685)
@@ -211,3 +223,6 @@ plotPearsonResiduals(residDW, facetLabel="BR-model: Default to Write-off", x_val
 plotPearsonResiduals(residDS, facetLabel="BR-model: Default to Settlement", x_vals=x_vals, y_vals=y_vals, vCol=vCol,
                      fileName=paste0(genFigPath,"PearsonResiduals_DS.png"))
 
+
+# - Cleanup
+rm(datAggr_train, datAggr_valid, datPred_Scaled, DD_Final, DS_Final, DW_Final, PD_Final, PP_Final, PS_Final)
