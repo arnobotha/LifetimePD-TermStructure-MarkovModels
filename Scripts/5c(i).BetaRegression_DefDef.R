@@ -658,7 +658,7 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is [0.3209929, 0.3245586]
 
 # - Update link function
-DD_Final<-betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+DD_Final <- betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                     M_Emp_Growth + ArrearsToBalance_Aggr_Prop  | ArrearsToBalance_Aggr_Prop, data=datAggr_train, link=optimal_link)
 summary(DD_Final)

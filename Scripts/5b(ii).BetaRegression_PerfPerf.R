@@ -686,7 +686,7 @@ AIC(PP_Final_Dyn_Phi) # AIC = -2006.32
 
 
 # --- Final
-PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+PP_Final <- betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
                     g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9+M_RealIncome_Growth_12 +
                     M_RealGDP_Growth_9+M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3+CreditLeverage_Aggr +
                     PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train)
@@ -710,7 +710,7 @@ optimal_link<-"loglog"
 # having more consistency across the beta regression models.
 
 # - Update link function
-PP_Final<-betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+PP_Final <- betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
                     g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12 +
                     M_RealGDP_Growth_9 + M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +
                     PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link=optimal_link)

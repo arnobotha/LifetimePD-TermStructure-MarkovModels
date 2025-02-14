@@ -44,18 +44,28 @@ PD_Final <- betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Gr
 
 
 # --- Performing to Performing
-
+PP_Final <- betareg(Y_PerfToPerf~ g0_Delinq_Ave + g0_Delinq_1_Ave + g0_Delinq_Any_Aggr_Prop +
+                      g0_Delinq_Any_Aggr_Prop_Lag_1 + M_RealIncome_Growth_9 + M_RealIncome_Growth_12 +
+                      M_RealGDP_Growth_9 + M_RealGDP_Growth_12 + NewLoans_Aggr_Prop_3 + CreditLeverage_Aggr +
+                      PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link="loglog")
 
 
 # --- Performing to Settlement
-PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave + M_Emp_Growth + M_Emp_Growth_1 + 
+PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
                     CreditLeverage_Aggr + AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link="loglog")
 
 
 # --- Default to Default
+DD_Final <- betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus1_Aggr_Prop_Lag_6 +
+                      CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
+                      M_Emp_Growth + ArrearsToBalance_Aggr_Prop  | ArrearsToBalance_Aggr_Prop, data=datAggr_train, link="loglog")
 
 
 # --- Default to Write-off
+DW_Final <- betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
+                      M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean +
+                      PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
+                    data=datAggr_train, link="loglog")
 
 
 # -- Default to Settlement
@@ -71,8 +81,14 @@ DS_Final <- betareg(Y_DefToSet ~ Prev_DS + M_RealIncome_Growth + M_RealIncome_Gr
 # - Create graphing dataset
 datGraph_PD <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
                           CooksD=round(cooks.distance(PD_Final),4),Facet_label="BR-model: Performing to Default")
+datGraph_PP <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
+                          CooksD=round(cooks.distance(PP_Final),4),Facet_label="BR-model: Performing to Performing")
 datGraph_PS <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
                           CooksD=round(cooks.distance(PS_Final),4),Facet_label="BR-model: Performing to Settlement")
+datGraph_DD <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
+                          CooksD=round(cooks.distance(DD_Final),4),Facet_label="BR-model: Default to Default")
+datGraph_DW <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
+                          CooksD=round(cooks.distance(DW_Final),4),Facet_label="BR-model: Default to Write-off")
 datGraph_DS <- data.table(i=1:datAggr_train[,.N], Date=datAggr_train$Date,
                           CooksD=round(cooks.distance(DS_Final),4),Facet_label="BR-model: Default to Settlement")
 
@@ -82,7 +98,10 @@ vCol = brewer.pal(10, name="Paired")[c(1,2,6)]
 
 # - Aesthetic engineering: Encircle outliers
 datGraph_PD[, Encircled := ifelse(CooksD/max(CooksD) >= 0.3, CooksD, NA)]
+datGraph_PP[, Encircled := ifelse(CooksD/max(CooksD) >= 0.5, CooksD, NA)]
 datGraph_PS[, Encircled := ifelse(CooksD/max(CooksD) >= 0.3, CooksD, NA)]
+datGraph_DD[, Encircled := ifelse(CooksD/max(CooksD) >= 0.8, CooksD, NA)]
+datGraph_DW[, Encircled := ifelse(CooksD/max(CooksD) >= 0.8, CooksD, NA)]
 datGraph_DS[, Encircled := ifelse(CooksD/max(CooksD) >= 0.8, CooksD, NA)]
 
 
@@ -112,6 +131,14 @@ plotCooksD <- function(datGiven, vCol, chosenFont, dpi=200, fileName="") {
 
 # --- Create graphs
 plotCooksD(datGiven=datGraph_PD, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_PD.png"))
+plotCooksD(datGiven=datGraph_PP, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_PP.png"))
 plotCooksD(datGiven=datGraph_PS, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_PS.png"))
-plotCooksD(datGiven=datGraph_DS, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_PS.png"))
+plotCooksD(datGiven=datGraph_DD, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_DD.png"))
+plotCooksD(datGiven=datGraph_DW, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_DW.png"))
+plotCooksD(datGiven=datGraph_DS, vCol=vCol, chosenFont, dpi=200, fileName=paste0(genFigPath, "CooksDist_DS.png"))
 
+
+
+# --- Cleanup
+rm(datAggr_train, datAggr_valid, datGraph_DD, datGraph_DS, datGraph_DW, datGraph_PD, datGraph_PP, datGraph_PS,
+   DD_Final, DS_Final, DW_Final, PD_Final, PP_Final, PS_Final)

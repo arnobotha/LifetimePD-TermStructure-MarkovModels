@@ -650,7 +650,7 @@ optimal_link<-"loglog"
 # Results are quite similar as the range of the pseudo r2 is 0.5378441, 0.581419]
 
 # - Update link function
-DS_Final<-betareg(Y_DefToSet ~ Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
+DS_Final <- betareg(Y_DefToSet ~ Prev_DS +  M_RealIncome_Growth  + M_RealIncome_Growth_1 + g0_Delinq_3_Ave + 
                     AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | g0_Delinq_Ave, data=datAggr_train, link=optimal_link)
 summary(DS_Final)
 DS_Final$pseudo.r.squared # Pseudo R2 = 0.581419

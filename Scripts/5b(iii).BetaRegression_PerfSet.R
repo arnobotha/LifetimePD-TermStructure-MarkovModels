@@ -615,7 +615,7 @@ optimal_link<-"loglog"
 
 # - Update link function
 # Also remove intercept as it is no longer statistically significant
-PS_Final<-betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
+PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave+M_Emp_Growth + M_Emp_Growth_1 + 
                     CreditLeverage_Aggr + AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link=optimal_link)
 summary(PS_Final)
 PS_Final$pseudo.r.squared # Pseudo R2 = 0.4632961
