@@ -259,7 +259,7 @@ vShape <- c(16,20,15,17)
 vLabel <- c("a_Actual"=bquote(italic(A[t*"'"])*': Actual'), "b_MC"=bquote(italic(C[t*"'"])*': Markov Chain'),
             "c_BR"=bquote(italic(B[t*"'"])*': Beta Regression'),"d_MLR"=bquote(italic(M[t*"'"])*': Multinomial Logistic Regression'))
 annoX <- as.Date("2017-12-31")
-annoY <- c(0.95,0.90,0.85)
+annoY <- c(0.95,0.89,0.83)
 
 # - Plot
 # - Create graph
