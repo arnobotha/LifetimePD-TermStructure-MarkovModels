@@ -43,7 +43,7 @@ if (!exists('datAggr_valid')) unpack.ffdf(paste0(genPath,"creditdata_valid_BR"),
 # ------ 2. Fit models to training data
 
 # --- Markov chain model
-datResults_MC <- Markov_TPM(DataSetMC=datCredit_smp,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
+matResults_MC <- Markov_TPM(DataSetMC=datCredit_smp,StateSpace=c("Perf","Def","W_Off","Set"), Absorbing=c(FALSE,FALSE,TRUE,TRUE))
 
 
 # --- Beta regression (BR) models
@@ -125,9 +125,9 @@ datCredit_valid[MarkovStatus=="Def", pred_MLR_DP := predict(modMLR_def, newdata=
 # field names: gvnRef_From, gvnRef_To, gvnFldPred_BR, gvnFldPred_MLR, gvnFldAct_BR, gvnFldAct_MLR
 # graphing options: chosenFont, vCol, vSize, vShape, vLabel, dpi
 graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_To, gvnFldPred_BR, gvnFldPred_MLR, gvnFldAct_BR, 
-                           gvnFldAct_MLR, chosenFont="Cambria", vCol="", vSize="", vShape="", vLabel="", yLabel="", dpi=180, annoX="", annoY="", fileName="") {
+                           gvnFldAct_MLR, chosenFont="Cambria", vCol="", vSize="", vShape="", vLabel="", yLabel="", dpi=220, annoX="", annoY="", fileName="") {
   # - Testing conditions
-  # datMC=datResults_MC; datBR=datPred_Scaled; datMLR=datCredit_valid; dteStart=as.Date("2007-06-30"); gvnRef_From="Def"
+  # datMC=matResults_MC; datBR=datPred_Scaled; datMLR=datCredit_valid; dteStart=as.Date("2007-06-30"); gvnRef_From="Def"
   # gvnRef_To="Perf"; gvnFldPred_BR="p_DP"; gvnFldPred_MLR="pred_MLR_DP"; gvnFldAct_BR="a_DP"; gvnFldAct_MLR="Y_DefToPerf_Sub"
   # vSize=""; vCol=""; vShape="";  vLabel=""; fileName=paste0(genFigPath, "TransRate_DP.png")
   
@@ -195,17 +195,21 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
       geom_point(aes(colour=Type, shape=Type), size=1) + 
       # Annotations
       annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[1], family=chosenFont, size=4,
-               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(C[t*\"'\"])*': '*",sprintf("%.4f", MAE_MC*100), "*'%'"), parse=T) + 
+               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(C[t*\"'\"])*': '*",
+                            str_sub(percent(MAE_MC, accuracy=0.001),1,-2), "*'%'"), parse=T) + 
       annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[2], family=chosenFont, size=4,
-               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(B[t*\"'\"])*': '*",sprintf("%.4f", MAE_BR*100), "*'%'"), parse=T) + 
+               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(B[t*\"'\"])*': '*",
+                            str_sub(percent(MAE_BR, accuracy=0.001),1,-2), "*'%'"), parse=T) + 
       annotate(geom="text", x = annoX, y = max(datAggr_sub$TransRate)*annoY[3], family=chosenFont, size=4,
-               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(M[t*\"'\"])*': '*",sprintf("%.4f", MAE_MLR*100), "*'%'"), parse=T) +     
+               label=paste0("'MAE between '*italic(A[t*\"'\"])*' and '*italic(M[t*\"'\"])*': '*",
+                            str_sub(percent(MAE_MLR, accuracy=0.001),1,-2), "*'%'"), parse=T) +     
       # Facets & scales
       scale_color_manual(name="", values=vCol, labels=vLabel) + 
       scale_linewidth_manual(name="", values=vSize, labels=vLabel) + scale_linetype_discrete(name="", labels=vLabel) +
       scale_shape_manual(name="", values=vShape, labels=vLabel) + 
       scale_x_date(date_breaks=paste0(6, " month"), date_labels = "%b %Y") +
-      scale_y_continuous(breaks=pretty_breaks(), labels=percent))
+      scale_y_continuous(breaks=pretty_breaks(), labels=percent) + 
+      guides(colour = guide_legend(nrow=2)))
   
   if (fileName != "") {
     ggsave(g, file=fileName, width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white") 
@@ -225,46 +229,46 @@ graphTransRate <- function(datMC, datBR, datMLR, dteStart, gvnRef_From, gvnRef_T
 
 # -- Performing start state
 # - Performing to Default
-lstPred_PD <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+lstPred_PD <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
                           gvnRef_To="Def", gvnFldPred_BR="p_PD", gvnFldPred_MLR="pred_MLR_PD", gvnFldAct_BR="a_PD", gvnFldAct_MLR="Y_PerfToDef_Sub",
-                          fileName=paste0(genFigPath, "TransRate_PD.png"), yLabel="Performing to Default")
+                          fileName=paste0(genFigPath, "TransRate_PD.png"), annoX=as.Date("2018-01-31"), annoY=c(0.9, 0.85, 0.8), yLabel="PD")
 
 # - Performing to Performing
-lstPred_PP <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+lstPred_PP <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
                              gvnRef_To="Perf", gvnFldPred_BR="p_PP", gvnFldPred_MLR="pred_MLR_PP", gvnFldAct_BR="a_PP", gvnFldAct_MLR="Y_PerfToPerf_Sub",
-                             fileName=paste0(genFigPath, "TransRate_PP.png"), annoY=c(0.999,0.998,0.997), yLabel="Performing to Performing")
+                             fileName=paste0(genFigPath, "TransRate_PP.png"), annoY=c(0.999,0.998,0.997), yLabel="PP")
 
 # - Performing to Settlement
-lstPred_PS <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+lstPred_PS <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
                              gvnRef_To="Set", gvnFldPred_BR="p_PS", gvnFldPred_MLR="pred_MLR_PS", gvnFldAct_BR="a_PS", gvnFldAct_MLR="Y_PerfToSet_Sub",
-                             fileName=paste0(genFigPath, "TransRate_PS.png"), annoY=c(0.97,0.92,0.87), yLabel="Performing to Settlement")
+                             fileName=paste0(genFigPath, "TransRate_PS.png"), annoY=c(0.97,0.91,0.85), yLabel="PS")
 
 # - Performing to Write-off
-lstPred_PW <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
+lstPred_PW <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=minDate_observed, gvnRef_From="Perf", 
                              gvnRef_To="W_Off", gvnFldPred_BR="p_PW", gvnFldPred_MLR="pred_MLR_PW", gvnFldAct_BR="a_PW", gvnFldAct_MLR="Y_PerfToWO_Sub",
-                             fileName=paste0(genFigPath, "TransRate_PW.png"), annoY=c(1.01,0.96,0.91), yLabel="Performing to Write-off")
+                             fileName=paste0(genFigPath, "TransRate_PW.png"), annoY=c(1.03,0.97,0.91), yLabel="PW")
 
 
 # -- Default start state
 # - Default to Default
-lstPred_DD <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+lstPred_DD <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
                           gvnRef_To="Def", gvnFldPred_BR="p_DD", gvnFldPred_MLR="pred_MLR_DD", gvnFldAct_BR="a_DD", gvnFldAct_MLR="Y_DefToDef_Sub",
-                          fileName=paste0(genFigPath, "TransRate_DD.png"), annoY=c(0.998,0.995,0.992), annoX=as.Date("2013-01-31"), yLabel="Default to Default")
+                          fileName=paste0(genFigPath, "TransRate_DD.png"), annoY=c(0.998,0.995,0.992), annoX=as.Date("2013-01-31"), yLabel="DD")
 
 # - Default to Write-off
-lstPred_DW <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+lstPred_DW <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
                           gvnRef_To="W_Off", gvnFldPred_BR="p_DW", gvnFldPred_MLR="pred_MLR_DW", gvnFldAct_BR="a_DW", gvnFldAct_MLR="Y_DefToWO_Sub",
-                          fileName=paste0(genFigPath, "TransRate_DW.png"), annoY=c(0.99,0.94,0.89), yLabel="Default to Write-off")
+                          fileName=paste0(genFigPath, "TransRate_DW.png"), annoY=c(0.99,0.93,0.87), yLabel="DW")
 
 # - Default to Settlement
-lstPred_DS <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+lstPred_DS <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
                           gvnRef_To="Set", gvnFldPred_BR="p_DS", gvnFldPred_MLR="pred_MLR_DS", gvnFldAct_BR="a_DS", gvnFldAct_MLR="Y_DefToSet_Sub",
-                          fileName=paste0(genFigPath, "TransRate_DS.png"), annoY=c(0.99,0.94,0.89), annoX=as.Date("2012-01-31"), yLabel="Default to Settlement")
+                          fileName=paste0(genFigPath, "TransRate_DS.png"), annoY=c(0.99,0.93,0.87), annoX=as.Date("2012-01-31"), yLabel="DS")
 
 # - Default to Performing
-lstPred_DP <- graphTransRate(datMC=datResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
+lstPred_DP <- graphTransRate(datMC=matResults_MC, datBR=datPred_Scaled, datMLR=datCredit_valid, dteStart=as.Date("2007-06-30"), gvnRef_From="Def", 
                           gvnRef_To="Perf", gvnFldPred_BR="p_DP", gvnFldPred_MLR="pred_MLR_DP", gvnFldAct_BR="a_DP", gvnFldAct_MLR="Y_DefToPerf_Sub",
-                          fileName=paste0(genFigPath, "TransRate_DP.png"), annoY=c(0.99,0.94,0.89), annoX=as.Date("2019-05-31"), yLabel="Default to Performing")
+                          fileName=paste0(genFigPath, "TransRate_DP.png"), annoY=c(0.2,0.14,0.08), annoX=as.Date("2019-05-31"), yLabel="DP")
 
 
 # --- Improvement in MAE-based AD-statistics (average discrepancy)
@@ -294,6 +298,6 @@ mean( 1-lstPred_PD$MLR_MAE_raw / lstPred_PD$MC_MAE_raw, # 64%
 
 
 # --- Cleanup
-rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, datResults_MC, PD_Final,
+rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, matResults_MC, PD_Final,
    modMLR_perf)
 
