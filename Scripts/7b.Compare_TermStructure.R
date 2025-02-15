@@ -293,3 +293,9 @@ annoY <- c(0.95,0.89,0.83)
 
 dpi <- 220
 ggsave(g, file=paste0(genFigPath, "TermStructure_PD.png"), width=1200/dpi, height=1000/dpi, dpi=dpi, bg="white") 
+
+
+rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, matResults_MC, 
+   modMLR_perf, modMLR_def, PP_Final, PD_Final, PS_Final, PW_Final, DD_Final, DP_Final, DS_Final, DW_Final,
+   datPred_Scaled, datAggr_MLR, datAggr_sub, g, datGraph, matTrans_Act, matTrans_Act_Cumul, matTrans_BR, matTrans_BR_Cumul,
+   matTrans_MC, matTrans_MC_Cumul, matTrans_MLR, matTrans_MLR_Cumul); gc()
