@@ -277,7 +277,7 @@ mean( 1-lstPred_PD$BR_MAE_raw / lstPred_PD$MC_MAE_raw, # 59%
       1-lstPred_PP$BR_MAE_raw / lstPred_PP$MC_MAE_raw, # 34%
       1-lstPred_PS$BR_MAE_raw / lstPred_PS$MC_MAE_raw, # 29%
       1-lstPred_PW$BR_MAE_raw / lstPred_PW$MC_MAE_raw, # -9%
-      1-lstPred_DP$BR_MAE_raw / lstPred_DP$MC_MAE_raw, # -24%
+      1-lstPred_DP$BR_MAE_raw / lstPred_DP$MC_MAE_raw, # -26%
       1-lstPred_DD$BR_MAE_raw / lstPred_DD$MC_MAE_raw, # -7%
       1-lstPred_DS$BR_MAE_raw / lstPred_DS$MC_MAE_raw, # 22%
       1-lstPred_DW$BR_MAE_raw / lstPred_DW$MC_MAE_raw) # 29%
@@ -286,18 +286,19 @@ mean( 1-lstPred_PD$BR_MAE_raw / lstPred_PD$MC_MAE_raw, # 59%
 
 # - MLSto Markov chain
 mean( 1-lstPred_PD$MLR_MAE_raw / lstPred_PD$MC_MAE_raw, # 64%
-      1-lstPred_PP$MLR_MAE_raw / lstPred_PP$MC_MAE_raw, # 44%
+      1-lstPred_PP$MLR_MAE_raw / lstPred_PP$MC_MAE_raw, # 46%
       1-lstPred_PS$MLR_MAE_raw / lstPred_PS$MC_MAE_raw, # 34%
-      1-lstPred_PW$MLR_MAE_raw / lstPred_PW$MC_MAE_raw, # 13%
+      1-lstPred_PW$MLR_MAE_raw / lstPred_PW$MC_MAE_raw, # 15%
       1-lstPred_DP$MLR_MAE_raw / lstPred_DP$MC_MAE_raw, # 28%
       1-lstPred_DD$MLR_MAE_raw / lstPred_DD$MC_MAE_raw, # 25%
       1-lstPred_DS$MLR_MAE_raw / lstPred_DS$MC_MAE_raw, # 38%
       1-lstPred_DW$MLR_MAE_raw / lstPred_DW$MC_MAE_raw) # 36%
-# 63.6% average improvement in AD
+# 64.1% average improvement in AD
 
 
 
 # --- Cleanup
-rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, matResults_MC, PD_Final,
-   modMLR_perf)
+rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, matResults_MC, 
+   modMLR_perf, modMLR_def, PP_Final, PD_Final, PS_Final, PW_Final, DD_Final, DP_Final, DS_Final, DW_Final,
+   datPred_Scaled, lstPred_DP, lstPred_DD, lstPred_DS, lstPred_DW, lstPred_PD, lstPred_PP, lstPred_PS, lstPred_PW); gc()
 
