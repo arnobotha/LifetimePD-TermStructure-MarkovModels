@@ -618,7 +618,7 @@ optimal_link<-"loglog"
 
 # - Update link function
 DW_Final <- betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + CuringEvents_Aggr_Prop +
-                    M_Emp_Growth + CreditLeverage_Aggr + CuringEvents_Aggr_Prop + AgeToTerm_Aggr_Mean +
+                    M_Emp_Growth + CreditLeverage_Aggr + AgeToTerm_Aggr_Mean +
                     PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
                   data=datAggr_train, link=optimal_link)
 summary(DW_Final)
