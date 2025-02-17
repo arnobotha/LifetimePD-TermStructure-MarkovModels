@@ -662,8 +662,8 @@ DD_Final <- betareg(Y_DefToDef ~ DefaultStatus1_Aggr_Prop_Lag_12 + DefaultStatus
                     CuringEvents_Aggr_Prop + M_Repo_Rate_12 +
                     M_Emp_Growth + ArrearsToBalance_Aggr_Prop  | ArrearsToBalance_Aggr_Prop, data=datAggr_train, link=optimal_link)
 summary(DD_Final)
-DD_Final$pseudo.r.squared # Pseudo R2 = 0.3245586
-AIC(DD_Final) # AIC = -1273.26
+percent(DD_Final$pseudo.r.squared,accuracy=0.01) # Pseudo R2 = 32.06
+AIC(DD_Final) # AIC = -1272.425
 cat("MAE = ",round(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),7)*100,"%",sep="","\n") # MAE = 0.82056%
 
 
@@ -679,7 +679,8 @@ sort(round(cooks.distance(DD_Final),4))
 Leave_Out<-c(36)
 # Retrain model on new training set
 DD_Adj<-update(DD_Final,subset=-Leave_Out)
-cat("Pseudo R^2 before adjustment = ",DD_Final$pseudo.r.squared," --- ","Pseudo R^2 after adjustment = ",DD_Adj$pseudo.r.squared,"\n",sep="")
+cat("Pseudo R^2 before adjustment = ", percent(DD_Final$pseudo.r.squared,accuracy=0.01)," --- ","Pseudo R^2 after adjustment = ",
+    percent(DD_Adj$pseudo.r.squared, accuracy=0.01),"\n",sep="")
 # Plot
 plot(datAggr_valid$Date,predict(DD_Adj,datAggr_valid),type="l",col="red",lwd=2,ylim=c(0.88,1),xlab="Date",ylab="Transition probability",main="Constant Phi after Cooks adjustment")
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_DefToDef),type="l")

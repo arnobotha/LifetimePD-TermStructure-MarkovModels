@@ -618,8 +618,8 @@ optimal_link<-"loglog"
 PS_Final <- betareg(Y_PerfToSet~ -1 + g0_Delinq_Any_Aggr_Prop_Lag_2 + g0_Delinq_3_Ave + M_Emp_Growth + M_Emp_Growth_1 + 
                     CreditLeverage_Aggr + AgeToTerm_Aggr_Mean + PerfSpell_Maturity_Aggr_Mean | M_Repo_Rate, data=datAggr_train, link=optimal_link)
 summary(PS_Final)
-PS_Final$pseudo.r.squared # Pseudo R2 = 0.4632961
-AIC(PS_Final) # AIC = -1958.794
+percent(PS_Final$pseudo.r.squared,accuracy=0.01) # Pseudo R2 = 0.4711473
+AIC(PS_Final) # AIC = -1962.1
 cat("MAE = ",round(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),7)*100,"%",sep="","\n") # MAE =  0.09473%
 
 
@@ -635,7 +635,8 @@ sort(round(cooks.distance(PS_Final),4))
 Leave_Out<-c(191,187)
 # Retrain model on new training set
 PS_Adj<-update(PS_Final,subset=-Leave_Out)
-cat("Pseudo R^2 before adjustment = ",PS_Final$pseudo.r.squared," --- ","Pseudo R^2 after adjustment = ",PS_Adj$pseudo.r.squared,"\n",sep="")
+cat("Pseudo R^2 before adjustment = ",percent(PS_Final$pseudo.r.squared,accuracy=0.01)," --- ","Pseudo R^2 after adjustment = ",
+    percent(PS_Adj$pseudo.r.squared,accuracy=0.01),"\n",sep="")
 # Plot
 plot(datAggr_valid$Date,predict(PS_Adj,datAggr_valid),type="l",col="red",lwd=2,ylim=c(0.001,0.015),xlab="Date",ylab="Transition probability",main="Constant Phi after Cooks adjustment")
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_PerfToSet),type="l")
@@ -643,7 +644,7 @@ MAEval<-round(mean(abs(predict(PS_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# Pseudo R2 before CD = 0.4632961; After CD = 0.599667
+# Pseudo R2 before CD = 0.4632961; After CD = 60.08%
 
 # --- Save Model
 PS_Final<-PS_Adj

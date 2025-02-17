@@ -687,6 +687,7 @@ PD_Final <- betareg(Y_PerfToDef ~ Ave_Margin_Aggr + M_Repo_Rate + M_Inflation_Gr
                     DefaultStatus1_Aggr_Prop_Lag_2 + g0_Delinq_2_Ave | g0_Delinq_2_Ave, data=datAggr_train, link = optimal_link)
 summary(PD_Final)
 PD_Final$pseudo.r.squared # Pseudo R2 = 0.864546
+percent(PD_Final$pseudo.r.squared,accuracy=0.01)
 AIC(PD_Final) # AIC = -2447.781
 cat("MAE = ",round(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_PerfToDef)),7)*100,"%",sep="","\n") # MAE = 0.03831%
 
@@ -703,7 +704,8 @@ sort(round(cooks.distance(PD_Final),4))
 Leave_Out<-c(66,2)
 # Retrain model on new training set
 PD_Adj<-update(PD_Final,subset=-Leave_Out)
-cat("Pseudo R^2 before adjustment = ",PD_Final$pseudo.r.squared," --- ","Pseudo R^2 after adjustment = ",PD_Adj$pseudo.r.squared,"\n",sep="")
+cat("Pseudo R^2 before adjustment = ",percent(PD_Final$pseudo.r.squared,accuracy=0.01)," --- ","Pseudo R^2 after adjustment = ",
+    percent(PD_Adj$pseudo.r.squared,accuracy=0.01),"\n",sep="")
 # Plot
 plot(datAggr_valid$Date,predict(PD_Adj,datAggr_valid),type="l",col="red",lwd=2,ylim=c(0.001,0.009),xlab="Date",ylab="Transition probability",main="Constant Phi after Cooks adjustment")
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_PerfToDef),type="l")

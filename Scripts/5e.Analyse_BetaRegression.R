@@ -56,39 +56,39 @@ if(!exists('DW_Final')) unpack.ffdf(paste0(genObjPath,"BR_D_To_W"), tempPath)
 
 # - Performing to Default
 summary(PD_Final)
-percent(PD_Final$pseudo.r.squared, accuracy=0.01) # 87.24%
-AIC(PD_Final) # -2446.269
-cat("MAE = ",percent(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_PerfToDef)),accuracy=0.00001),sep="","\n") # 0.03795%
+percent(PD_Final$pseudo.r.squared, accuracy=0.01) # 87.21%
+AIC(PD_Final) # -2445.911
+cat("MAE = ",percent(mean(abs(predict(PD_Final,datAggr_valid)-datAggr_valid$Y_PerfToDef)),accuracy=0.00001),sep="","\n") # 0.03796%
 
 # - Performing to Performing
 summary(PP_Final)
-percent(PP_Final$pseudo.r.squared, accuracy=0.01) # 70.04%
-AIC(PP_Final) # -2446.269
-cat("MAE = ",percent(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),accuracy=0.00001),sep="","\n") #  0.10263%
+percent(PP_Final$pseudo.r.squared, accuracy=0.01) # 69.96%
+AIC(PP_Final) # -2004.059
+cat("MAE = ",percent(mean(abs(predict(PP_Final,datAggr_valid)-datAggr_valid$Y_PerfToPerf)),accuracy=0.00001),sep="","\n") #  0.10270%
 
 # - Performing to Settlement
 summary(PS_Final)
-percent(PS_Final$pseudo.r.squared, accuracy=0.01) # 59.97%
-AIC(PS_Final) # -2030.63
-cat("MAE = ",percent(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),accuracy=0.00001),sep="","\n") #  0.09531%
+percent(PS_Final$pseudo.r.squared, accuracy=0.01) # 60.08%
+AIC(PS_Final) # -2031.005
+cat("MAE = ",percent(mean(abs(predict(PS_Final,datAggr_valid)-datAggr_valid$Y_PerfToSet)),accuracy=0.00001),sep="","\n") #  0.09544%
 
 # - Default to Default
 summary(DD_Final)
-percent(DD_Final$pseudo.r.squared, accuracy=0.01) # 33.68%
-AIC(DD_Final) # -1269.948
-cat("MAE = ",percent(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),accuracy=0.00001),sep="","\n") #  0.82782%
+percent(DD_Final$pseudo.r.squared, accuracy=0.01) # 33.27%
+AIC(DD_Final) # -1269.065
+cat("MAE = ",percent(mean(abs(predict(DD_Final,datAggr_valid)-datAggr_valid$Y_DefToDef)),accuracy=0.00001),sep="","\n") #  0.82611%
 
 # - Default to Settlement
 summary(DS_Final)
 percent(DS_Final$pseudo.r.squared, accuracy=0.01) # 63.47%
 AIC(DS_Final) # -1535.38
-cat("MAE = ",percent(mean(abs(predict(DS_Final,datAggr_valid)-datAggr_valid$Y_DefToSet)),accuracy=0.00001),sep="","\n") #  0.42276%
+cat("MAE = ",percent(mean(abs(predict(DS_Final,datAggr_valid)-datAggr_valid$Y_DefToSet)),accuracy=0.00001),sep="","\n") #  0.42289%
 
 # - Default to Write-off
 summary(DW_Final)
-percent(DW_Final$pseudo.r.squared, accuracy=0.01) # 39.63%
-AIC(DW_Final) # -1530.126
-cat("MAE = ",percent(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),accuracy=0.00001),sep="","\n") #  0.42276%
+percent(DW_Final$pseudo.r.squared, accuracy=0.01) # 39.74%
+AIC(DW_Final) # -1529.156
+cat("MAE = ",percent(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),accuracy=0.00001),sep="","\n") #  0.36955%
 
 
 
@@ -144,12 +144,12 @@ residDW <- residuals(DW_Final,type="pearson")
 residDS <- residuals(DS_Final,type="pearson")
 
 # - Statistical moments of residuals (reporting purposes)
-format(skewness(residPD), digits=3) # 0.687
-format(skewness(residPP), digits=3) # 0.161
-format(skewness(residPS), digits=3) # -0.862
+format(skewness(residPD), digits=3) # 0.710
+format(skewness(residPP), digits=3) # 0.476
+format(skewness(residPS), digits=3) # -0.849
 format(skewness(residDD), digits=3) # -0.213
-format(skewness(residDW), digits=3) # 0.857
-format(skewness(residDS), digits=4) # 1.406
+format(skewness(residDW), digits=3) # 0.872
+format(skewness(residDS), digits=4) # 1.405
 
 
 # --- Graphing logic: custom function
@@ -165,7 +165,7 @@ plotPearsonResiduals <- function(residuals, facetLabel, vCol, x_vals, y_vals, fi
   
   # - Perform Kolmorogove-Smirnov test for evaluating normality in residuals
   testResult <- ks.test(residuals, y="pnorm")
-  
+
   # - Aesthetic engineering: Annotations
   dat_anno1 <- data.table(Label = c(paste0("Empirical kurtosis = ",round(kurtosis(residuals),3)),
                                     paste0("Empirical skewness = ", round(skewness(residuals),3)),

@@ -622,9 +622,9 @@ DW_Final <- betareg(Y_DefToWO ~ Prev_DW + DefaultStatus1_Aggr_Prop_Lag_6 + Curin
                     PerfSpell_Maturity_Aggr_Mean | -1 + M_RealGDP_Growth_3 + DefaultStatus1_Aggr_Prop_Lag_1 + M_DTI_Growth_12, 
                   data=datAggr_train, link=optimal_link)
 summary(DW_Final)
-DW_Final$pseudo.r.squared # Pseudo R2 = 0.3910887
-AIC(DW_Final) # AIC = -1524.5
-cat("MAE = ",round(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.37035%
+percent(DW_Final$pseudo.r.squared, accuracy=0.01) # Pseudo R2 = 39.23%
+AIC(DW_Final) # AIC = -1523.918
+cat("MAE = ",round(mean(abs(predict(DW_Final,datAggr_valid)-datAggr_valid$Y_DefToWO)),7)*100,"%",sep="","\n") # MAE = 0.37011%
 
 
 
@@ -639,7 +639,8 @@ sort(round(cooks.distance(DW_Final),4))
 Leave_Out<-c(65)
 # Retrain model on new training set
 DW_Adj<-update(DW_Final,subset=-Leave_Out)
-cat("Pseudo R^2 before adjustment = ",DW_Final$pseudo.r.squared," --- ","Pseudo R^2 after adjustment = ",DW_Adj$pseudo.r.squared,"\n",sep="")
+cat("Pseudo R^2 before adjustment = ",percent(DW_Final$pseudo.r.squared, accuracy=0.01)," --- ","Pseudo R^2 after adjustment = ",
+    percent(DW_Adj$pseudo.r.squared, accuracy=0.01),"\n",sep="")
 # Plot
 plot(datAggr_valid$Date,predict(DW_Adj,datAggr_valid),type="l",col="red",lwd=2,ylim=c(0,0.05),xlab="Date",ylab="Transition probability",main="Constant Phi after Cooks adjustment")
 lines(datAggr_valid$Date,as.numeric(datAggr_valid$Y_DefToWO),type="l")
@@ -647,7 +648,7 @@ MAEval<-round(mean(abs(predict(DW_Adj,datAggr_valid)-as.numeric(datAggr_valid$Y_
 legend(x="topright",paste("MAE = ",MAEval,"%"))
 cat("MAE of Cooks Distance adjusted model= ",MAEval,"%","\n",sep="")
 ### RESULTS: Cooks distance adjustment improved the model fit:
-# Pseudo R2 before CD = 0.3910887; After CD = 0.3963285
+# Pseudo R2 before CD = 39.23%; After CD = 39.74%
 
 # --- Save Model
 DW_Final<-DW_Adj
