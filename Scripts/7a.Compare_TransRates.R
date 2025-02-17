@@ -299,6 +299,6 @@ mean( 1-lstPred_PD$MLR_MAE_raw / lstPred_PD$MC_MAE_raw, # 64%
 
 # --- Cleanup
 rm(datCredit_smp, datCredit_train, datCredit_valid, datAggr_train, datAggr_valid, matResults_MC, 
-   modMLR_perf, modMLR_def, PP_Final, PD_Final, PS_Final, PW_Final, DD_Final, DP_Final, DS_Final, DW_Final,
+   modMLR_perf, modMLR_def, PP_Final, PD_Final, PS_Final, DD_Final, DS_Final, DW_Final,
    datPred_Scaled, lstPred_DP, lstPred_DD, lstPred_DS, lstPred_DW, lstPred_PD, lstPred_PP, lstPred_PS, lstPred_PW); gc()
 
