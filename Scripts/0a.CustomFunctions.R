@@ -1281,10 +1281,14 @@ Gen_Youd_Ind<-function(Trained_Model, Train_DataSet, Target, a){
 
 # ------------------------- MARKOV-RELATED FUNCTIONS ----------------------------------
 
+# --- First-Order Time-Homogeneous Marcov Chain TPM
 # -- Function for estimating the Markov-related transition matrix given a dataset
-### INPUTS: 
-# - Dataset
-### OUTPUTS: TPM
+### INPUTS:
+# - DataSetMC: A panel dataset containing the relevant columns such as MarkovStatus.
+# - StateSpace: The state space of the Markov model to be estimated, e.g., StateSpace=c("Perf","Def","W_Off","Set")
+# - Absorbing: A vector of length = length(StateSpace), indicating whether the respective states specified in
+#              StateSpace are absorbing or not.
+### OUTPUTS: The estimated first-order (discrete) time-homogeneous Marcov chain transition probability matrix
 
 Markov_TPM<-function(DataSetMC, StateSpace, Absorbing){
   
@@ -1327,9 +1331,10 @@ Markov_TPM<-function(DataSetMC, StateSpace, Absorbing){
 
 
 # --- Function for generating the state spell number
-### INPUTS: 
-# - Dataset
-### OUTPUTS: TPM
+# -- This fuction tracks the state spell number on state level.
+### INPUTS:
+# - vMarkovStatus: The column in the datatable specifying the state that a loan is in.
+### OUTPUTS: A vector of the state visit numbers to be added back to the datatable.
 
 Calc_StateNum<-function(vMarkovStatus){
   # Initialize a vector to store the results
@@ -1356,11 +1361,13 @@ Calc_StateNum<-function(vMarkovStatus){
   return(state_counts)
 }
 
-# --------------------- FIRST ORDER TIME HOMOGENEOUS MC -------------------------------
-# --- Function for obtaining the previous state spell's age
-### INPUTS: 
-# - Dataset
-### OUTPUTS: TPM
+# --- Function for generating the state spell number
+# -- This fuction is used to create a lagged spell age covariate. I.e., it looks
+# at the age of the previous spell and assigns it as a covariate for prediction purposes.
+### INPUTS:
+# - vSpell_Counter: The counter variable that tracks the number of the spell.
+# - vStateSpell_Age: The total age of the current spell that will be lagged.
+### OUTPUTS: The lagged variant of spell age.
 Lagged_Spell_Age<-function(vSpell_Counter,vStateSpell_Age){
   prev_age<-rep(0,length(vSpell_Counter)) # Initialise return vector
   for(i in 1:length(vSpell_Counter)){ # Iterate over given vectors
